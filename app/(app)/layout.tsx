@@ -8,3 +8,4 @@ export default function AppGroupLayout({
 }) {
   return <AppShell>{children}</AppShell>;
 }
+
