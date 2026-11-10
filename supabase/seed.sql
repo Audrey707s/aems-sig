@@ -1,0 +1,148 @@
+-- =============================================================================
+-- AEMS (Asset & Equipment Management System) — Initial Seed Data
+-- Run after 0001_aems_schema_rls_rpc.sql
+-- =============================================================================
+
+-- 1. Profiles
+insert into public.profiles (id, email, full_name, role, is_active, department) values
+  ('00000000-0000-4000-8000-000000000001', 'accounting@aems.co.id', 'Siti Rahmawati', 'ACCOUNTING', true, 'Accounting & Fixed Asset'),
+  ('00000000-0000-4000-8000-000000000002', 'maintenance@aems.co.id', 'Budi Santoso', 'MAINTENANCE', true, 'Maintenance & Operasional'),
+  ('00000000-0000-4000-8000-000000000003', 'admin@aems.co.id', 'Immanuella Audrey Soegito', 'ADMIN', true, 'IT & Governance')
+on conflict (id) do nothing;
+
+-- 2. Reference Categories & Locations
+insert into public.asset_categories (id, code, name, is_active) values
+  ('10000000-0000-4000-8000-000000000001', 'CAT-IT', 'Peralatan TI', true),
+  ('10000000-0000-4000-8000-000000000002', 'CAT-MSN', 'Mesin Produksi', true),
+  ('10000000-0000-4000-8000-000000000003', 'CAT-UTL', 'Utilitas & Pompa', true),
+  ('10000000-0000-4000-8000-000000000004', 'CAT-KND', 'Kendaraan & Alat Berat', true)
+on conflict (code) do nothing;
+
+insert into public.equipment_categories (id, code, name, is_active) values
+  ('20000000-0000-4000-8000-000000000001', 'EQC-CMP', 'Perangkat Komputasi', true),
+  ('20000000-0000-4000-8000-000000000002', 'EQC-STR', 'Media Penyimpanan & Memori', true),
+  ('20000000-0000-4000-8000-000000000003', 'EQC-MTR', 'Motor & Penggerak', true),
+  ('20000000-0000-4000-8000-000000000004', 'EQC-SNS', 'Sensor & Instrumentasi', true)
+on conflict (code) do nothing;
+
+insert into public.locations (id, code, name, is_active) values
+  ('30000000-0000-4000-8000-000000000001', 'LOC-GRS', 'Kantor Gresik', true),
+  ('30000000-0000-4000-8000-000000000002', 'LOC-L1', 'Pabrik Line 1', true),
+  ('30000000-0000-4000-8000-000000000003', 'LOC-L2', 'Pabrik Line 2', true),
+  ('30000000-0000-4000-8000-000000000004', 'LOC-UTL', 'Area Utilitas', true),
+  ('30000000-0000-4000-8000-000000000005', 'LOC-GDG', 'Gudang Utama', true)
+on conflict (code) do nothing;
+
+-- 3. Master Assets (SAP)
+insert into public.assets (
+  id, company_code, sap_asset_no, sap_sub_no, name, description,
+  asset_category_id, location_id, cost_center, acquisition_date, acquisition_value,
+  currency, serial_no, manufacturer, model, status, source_type, created_by
+) values
+  (
+    '40000000-0000-4000-8000-000000000001', 'MAIN', 'SAP-001', '0000',
+    'Laptop Lenovo ThinkPad T14', 'Unit laptop operasional departemen',
+    '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001',
+    'CC-1100', '2026-01-15', 18500000, 'IDR', 'PF-39X81', 'Lenovo', 'ThinkPad T14 Gen 4', 'ACTIVE', 'EXCEL',
+    '00000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '40000000-0000-4000-8000-000000000002', 'MAIN', 'SAP-002', '0000',
+    'Mesin Produksi Rotary Kiln', 'Mesin utama lini produksi 2',
+    '10000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000003',
+    'CC-2200', '2025-06-10', 450000000, 'IDR', 'RK-8820', 'FLSmidth', 'RK-500', 'ACTIVE', 'EXCEL',
+    '00000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '40000000-0000-4000-8000-000000000003', 'MAIN', 'SAP-003', '0000',
+    'Pompa Air Sentrifugal', 'Pompa distribusi air pendingin utilitas',
+    '10000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000004',
+    'CC-3100', '2025-09-01', 65000000, 'IDR', 'PMP-4410', 'Grundfos', 'NK 100-200', 'ACTIVE', 'EXCEL',
+    '00000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '40000000-0000-4000-8000-000000000004', 'MAIN', 'SAP-004', '0000',
+    'Forklift Elektrik Gudang', 'Unit material handling area gudang logistik',
+    '10000000-0000-4000-8000-000000000004', '30000000-0000-4000-8000-000000000005',
+    'CC-4100', '2026-03-20', 280000000, 'IDR', 'FL-9912', 'Toyota', '8FBE25', 'ACTIVE', 'MANUAL',
+    '00000000-0000-4000-8000-000000000001'
+  )
+on conflict (id) do nothing;
+
+-- 4. Master Equipment
+insert into public.equipment (
+  id, source_system, equipment_no, kind, name, specification,
+  equipment_category_id, manufacturer, model, serial_no, condition,
+  location_id, install_date, status, root_asset_id, depth, source_type, created_by
+) values
+  ('50000000-0000-4000-8000-000000000001', 'SAP_PM', 'EQ-001', 'WHOLE_UNIT', 'Laptop Unit Utama', 'Intel Core i7, 14 inch', '20000000-0000-4000-8000-000000000001', 'Lenovo', 'T14-G4', 'SN-EQ001', 'BAIK', '30000000-0000-4000-8000-000000000001', '2026-01-16', 'ACTIVE', '40000000-0000-4000-8000-000000000001', 1, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000101', 'SAP_PM', 'EQ-101', 'COMPONENT', 'SSD NVMe 512GB', 'PCIe 4.0 M.2 2280', '20000000-0000-4000-8000-000000000002', 'Samsung', 'PM9A1', 'SN-SSD-101', 'BAIK', '30000000-0000-4000-8000-000000000001', '2026-01-16', 'ACTIVE', '40000000-0000-4000-8000-000000000001', 2, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000102', 'SAP_PM', 'EQ-102', 'COMPONENT', 'RAM DDR5 16GB', 'SO-DIMM 5600MHz', '20000000-0000-4000-8000-000000000002', 'SK Hynix', 'HMCG78MEBSA', 'SN-RAM-102', 'BAIK', '30000000-0000-4000-8000-000000000001', '2026-01-16', 'ACTIVE', '40000000-0000-4000-8000-000000000001', 2, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000103', 'SAP_PM', 'EQ-103', 'COMPONENT', 'Battery Li-Ion 52.5Wh', '4-Cell Internal Battery', '20000000-0000-4000-8000-000000000001', 'Lenovo', 'L22M4P70', 'SN-BAT-103', 'BAIK', '30000000-0000-4000-8000-000000000001', '2026-01-16', 'ACTIVE', '40000000-0000-4000-8000-000000000001', 2, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000002', 'SAP_PM', 'EQ-002', 'WHOLE_UNIT', 'Mesin Utama Rotary', 'Kapasitas 120 Ton/Jam', '20000000-0000-4000-8000-000000000003', 'FLSmidth', 'RK-MAIN', 'SN-EQ002', 'BAIK', '30000000-0000-4000-8000-000000000003', '2025-06-15', 'ACTIVE', '40000000-0000-4000-8000-000000000002', 1, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000201', 'SAP_PM', 'EQ-201', 'COMPONENT', 'Motor Penggerak Utama', '3-Phase 75kW 1500RPM', '20000000-0000-4000-8000-000000000003', 'ABB', 'M3BP-280', 'SN-MTR-201', 'BAIK', '30000000-0000-4000-8000-000000000003', '2025-06-15', 'ACTIVE', '40000000-0000-4000-8000-000000000002', 2, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000202', 'SAP_PM', 'EQ-202', 'COMPONENT', 'Sensor Suhu & Vibrasi', 'Industrial RTD PT100', '20000000-0000-4000-8000-000000000004', 'Endress+Hauser', 'TR15', 'SN-SNS-202', 'BAIK', '30000000-0000-4000-8000-000000000003', '2025-06-15', 'ACTIVE', '40000000-0000-4000-8000-000000000002', 2, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000203', 'SAP_PM', 'EQ-203', 'COMPONENT', 'Modul Transmiter Sensor', '4-20mA HART Protocol', '20000000-0000-4000-8000-000000000004', 'Endress+Hauser', 'TMT82', 'MS-77821', 'RUSAK_RINGAN', '30000000-0000-4000-8000-000000000003', '2026-10-12', 'ACTIVE', '40000000-0000-4000-8000-000000000002', 3, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000301', 'SAP_PM', 'EQ-301', 'COMPONENT', 'Motor Pompa Sentrifugal', '3-Phase Induction Motor 37kW IP55', '20000000-0000-4000-8000-000000000003', 'Siemens', 'SIMOTICS 1LE1', 'SN-PMP-301', 'BAIK', '30000000-0000-4000-8000-000000000004', '2025-09-02', 'ACTIVE', '40000000-0000-4000-8000-000000000003', 1, 'EXCEL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000900', 'SAP_PM', 'EQ-900', 'WHOLE_UNIT', 'Printer Cadangan LaserJet', 'Monochrome Duplex Network Printer 40ppm', '20000000-0000-4000-8000-000000000001', 'HP', 'LaserJet Pro M404dn', 'SN-PRN-900', 'BAIK', '30000000-0000-4000-8000-000000000005', null, 'ACTIVE', null, 0, 'MANUAL', '00000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000915', 'SAP_PM', 'EQ-915', 'COMPONENT', 'Fan Cooler Panel', 'Axial Cooling Fan 220V', '20000000-0000-4000-8000-000000000003', 'Delta', 'AFB1224SHE', 'SN-FAN-915', 'BAIK', '30000000-0000-4000-8000-000000000002', null, 'ACTIVE', null, 0, 'MANUAL', '00000000-0000-4000-8000-000000000002')
+on conflict (id) do nothing;
+
+-- 5. Active Asset -> Equipment Mappings
+insert into public.asset_equipment_mappings (id, asset_id, equipment_id, valid_from, created_by) values
+  ('60000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '2026-01-16T08:00:00Z', '00000000-0000-4000-8000-000000000003'),
+  ('60000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', '2025-06-15T08:00:00Z', '00000000-0000-4000-8000-000000000003'),
+  ('60000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000301', '2025-09-02T08:00:00Z', '00000000-0000-4000-8000-000000000003')
+on conflict (id) do nothing;
+
+-- 6. Equipment -> Sub-Equipment Relationships
+insert into public.equipment_relationships (id, parent_equipment_id, child_equipment_id, valid_from, valid_to, end_reason, created_by) values
+  ('70000000-0000-4000-8000-000000000101', '50000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', '2026-01-16T08:00:00Z', null, null, '00000000-0000-4000-8000-000000000003'),
+  ('70000000-0000-4000-8000-000000000102', '50000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000102', '2026-01-16T08:00:00Z', null, null, '00000000-0000-4000-8000-000000000003'),
+  ('70000000-0000-4000-8000-000000000103', '50000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000103', '2026-01-16T08:00:00Z', null, null, '00000000-0000-4000-8000-000000000003'),
+  ('70000000-0000-4000-8000-000000000201', '50000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000201', '2025-06-15T08:00:00Z', null, null, '00000000-0000-4000-8000-000000000003'),
+  ('70000000-0000-4000-8000-000000000202', '50000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000202', '2025-06-15T08:00:00Z', null, null, '00000000-0000-4000-8000-000000000003'),
+  ('70000000-0000-4000-8000-000000000200', '50000000-0000-4000-8000-000000000201', '50000000-0000-4000-8000-000000000203', '2026-09-01T08:00:00Z', '2026-10-12T09:00:00Z', 'MOVE', '00000000-0000-4000-8000-000000000002'),
+  ('70000000-0000-4000-8000-000000000203', '50000000-0000-4000-8000-000000000202', '50000000-0000-4000-8000-000000000203', '2026-10-12T09:00:00Z', null, null, '00000000-0000-4000-8000-000000000003')
+on conflict (id) do nothing;
+
+-- 7. Single Active Parent Slot
+insert into public.equipment_active_parent (equipment_id, parent_kind, parent_id, link_id) values
+  ('50000000-0000-4000-8000-000000000001', 'ASSET', '40000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001'),
+  ('50000000-0000-4000-8000-000000000101', 'EQUIPMENT', '50000000-0000-4000-8000-000000000001', '70000000-0000-4000-8000-000000000101'),
+  ('50000000-0000-4000-8000-000000000102', 'EQUIPMENT', '50000000-0000-4000-8000-000000000001', '70000000-0000-4000-8000-000000000102'),
+  ('50000000-0000-4000-8000-000000000103', 'EQUIPMENT', '50000000-0000-4000-8000-000000000001', '70000000-0000-4000-8000-000000000103'),
+  ('50000000-0000-4000-8000-000000000002', 'ASSET', '40000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000002'),
+  ('50000000-0000-4000-8000-000000000201', 'EQUIPMENT', '50000000-0000-4000-8000-000000000002', '70000000-0000-4000-8000-000000000201'),
+  ('50000000-0000-4000-8000-000000000202', 'EQUIPMENT', '50000000-0000-4000-8000-000000000002', '70000000-0000-4000-8000-000000000202'),
+  ('50000000-0000-4000-8000-000000000203', 'EQUIPMENT', '50000000-0000-4000-8000-000000000202', '70000000-0000-4000-8000-000000000203'),
+  ('50000000-0000-4000-8000-000000000301', 'ASSET', '40000000-0000-4000-8000-000000000003', '60000000-0000-4000-8000-000000000003')
+on conflict (equipment_id) do nothing;
+
+-- 8. Specification Items
+insert into public.equipment_spec_items (id, equipment_id, spec_name, spec_value, spec_group, quantity, serial_no, created_by) values
+  ('80000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'Panel Layar', '14 inci IPS FHD Anti-Glare 300 nits', 'Display', 1, null, '00000000-0000-4000-8000-000000000002'),
+  ('80000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000001', 'Adaptor Daya', 'USB-C 65W AC Adapter', 'Power', 1, 'ADP-65W-09', '00000000-0000-4000-8000-000000000002')
+on conflict (id) do nothing;
+
+-- 9. Mapping History
+insert into public.mapping_history (id, equipment_id, event_type, from_parent_kind, from_parent_id, to_parent_kind, to_parent_id, from_asset_id, to_asset_id, actor_id, approved_by, reason, occurred_at) values
+  ('90000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000203', 'LINK_EQUIPMENT', null, null, 'EQUIPMENT', '50000000-0000-4000-8000-000000000201', null, '40000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000003', 'Pemasangan awal modul transmiter', '2026-09-01T08:00:00Z'),
+  ('90000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000203', 'MOVE', 'EQUIPMENT', '50000000-0000-4000-8000-000000000201', 'EQUIPMENT', '50000000-0000-4000-8000-000000000202', '40000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000003', 'Relokasi modul transmiter langsung ke unit sensor suhu EQ-202', '2026-10-12T09:00:00Z')
+on conflict (id) do nothing;
+
+-- 10. Pending Mapping Change Request (CR-0012)
+insert into public.mapping_change_requests (id, request_code, request_type, status, requested_by, reason, effective_at, created_at) values
+  ('95000000-0000-4000-8000-000000000012', 'CR-0012', 'LINK', 'SUBMITTED', '00000000-0000-4000-8000-000000000002', 'Pemasangan Fan Cooler EQ-915 ke Mesin Utama EQ-002', '2026-11-10T07:30:00Z', '2026-11-10T07:30:00Z')
+on conflict (id) do nothing;
+
+insert into public.mapping_change_items (id, change_request_id, equipment_id, action_type, to_parent_kind, to_parent_id, to_root_asset_id, descendant_count, status) values
+  ('96000000-0000-4000-8000-000000000012', '95000000-0000-4000-8000-000000000012', '50000000-0000-4000-8000-000000000915', 'LINK', 'EQUIPMENT', '50000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000002', 0, 'OPEN')
+on conflict (id) do nothing;
+
+-- 11. Reconciliation Findings
+insert into public.reconciliation_findings (id, finding_type, severity, entity_type, entity_id, entity_code, description, details, status) values
+  ('98000000-0000-4000-8000-000000000001', 'UNMAPPED_EQUIPMENT', 'MEDIUM', 'EQUIPMENT', '50000000-0000-4000-8000-000000000900', 'EQ-900', 'Equipment aktif belum memiliki aset induk efektif.', '{"source_system": "SAP_PM", "kind": "WHOLE_UNIT", "location": "Gudang Utama"}'::jsonb, 'OPEN'),
+  ('98000000-0000-4000-8000-000000000002', 'UNMAPPED_EQUIPMENT', 'LOW', 'EQUIPMENT', '50000000-0000-4000-8000-000000000915', 'EQ-915', 'Equipment belum terhubung ke aset induk (pengajuan CR-0012 menunggu persetujuan).', '{"pending_request": "CR-0012"}'::jsonb, 'OPEN')
+on conflict (id) do nothing;
+

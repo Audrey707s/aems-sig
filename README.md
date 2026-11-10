@@ -1,0 +1,50 @@
+# AEMS — Asset & Equipment Management System (Blueprint R.02)
+
+Aplikasi web terpadu untuk menghubungkan **Master Data Aset (SAP)** dari tim **Accounting** dengan **Master Data Equipment** beserta hierarki induk–anak (parent–child) dari tim **Maintenance / Operasional**, dilengkapi mekanisme persetujuan **Maker-Checker**, pelacakan riwayat waktu (*temporal relationships*), import Excel (`.xlsx`) dengan deteksi duplikat (**Skip / Replace**), rekonsiliasi data, laporan ekspor (`.xlsx` & `.pdf`), dan jejak audit (*append-only audit trail*).
+
+---
+
+## Arsitektur & Teknologi
+
+- **Frontend & Backend API**: Next.js 15 (App Router), React 19, TypeScript (Strict Mode), Tailwind CSS
+- **Database & Keamanan**: Dedicated Supabase PostgreSQL (`supabase/migrations/0001_aems_schema_rls_rpc.sql`) dengan Row-Level Security (RLS), partial unique indexes, recursive CTE hierarchy checks, dan transactional RPC
+- **Dokumen & Ekspor**: `exceljs` untuk parsing/pembuatan berkas `.xlsx` asli dan `pdf-lib` untuk pembuatan dokumen laporan `.pdf`
+- **Validasi & Pengujian**: `zod` untuk validasi skema server-side dan `vitest` untuk pengujian unit serta integrasi
+
+---
+
+## Modul MVP (Sesuai Blueprint R.02)
+
+1. **Dashboard (`/dashboard`)**: KPI terklik (*clickable metrics*) yang mengarah langsung ke daftar terfilter, distribusi aset per kategori & lokasi, antrean persetujuan, dan ringkasan temuan rekonsiliasi.
+2. **Master Data Aset (`/assets` & `/assets/[id]`)**: Pengelolaan aset SAP, pencarian dua arah, tampilan pohon hierarki equipment di bawah aset, **Rekonstruksi Hierarki Historis (`as_of`)**, deteksi konflik versi (`row_version` HTTP 409 DiffView), serta proteksi *soft-delete*.
+3. **Master Data Equipment (`/equipment`, `/equipment/unmapped`, `/equipment/[id]`)**: Pengelolaan equipment (`WHOLE_UNIT`, `COMPONENT`, `OTHER`), *breadcrumb* rantai induk hingga aset SAP induk efektif, daftar turunan (*descendants*), serta **Spesifikasi Komponen Tanpa Nomor Resmi (`equipment_spec_items`)** beserta fitur promosi menjadi equipment bernomor resmi.
+4. **Mapping & Hierarki (`/mapping`)**: Pengajuan `LINK`, `MOVE`, dan `UNLINK` dengan **Pratinjau Dampak (*Impact Preview*)**, validasi siklus (`AE001`), kedalaman maksimum (`AE002`), satu induk aktif (`AE003`), satu pengajuan terbuka per equipment (`AE004`), serta antrean persetujuan **Maker-Checker**.
+5. **Import Data Excel (`/imports`)**: Wizard 3 jenis import (`ASSET_MASTER`, `EQUIPMENT_MASTER`, `MAPPING`), unduh template resmi `.xlsx`, deteksi duplikat (`NEW`, `IDENTICAL`, `DUPLICATE_DIFF`, `DUPLICATE_IN_FILE`), pilihan `SKIP` atau `REPLACE` per baris atau masal, mode komit `ATOMIC` atau `PARTIAL`, dan unduh laporan baris gagal `.xlsx`.
+6. **Laporan & Ekspor (`/reports`)**: 8 laporan standar dengan pratinjau langsung dan ekspor `.xlsx` maupun `.pdf` yang tercatat otomatis di Audit Trail.
+7. **Administrasi (`/admin/users`, `/admin/audit`, `/admin/reconciliation`, `/admin/settings`)**: Manajemen pengguna 3 role, log audit *append-only*, pemindaian rekonsiliasi data, dan halaman **Kebijakan & Parameter Sistem (`A-01..A-09` & `Q-01..Q-10`)**.
+
+---
+
+## Cara Menjalankan Secara Lokal
+
+```bash
+# 1. Masuk ke direktori proyek
+cd aems
+
+# 2. Salin konfigurasi environment
+cp .env.example .env.local
+
+# 3. Instal dependensi
+npm install
+
+# 4. Jalankan pemeriksaan tipe TypeScript
+npm run typecheck
+
+# 5. Jalankan unit & integration tests
+npm test
+
+# 6. Jalankan server pengembangan lokal
+npm run dev
+```
+
+Buka `http://localhost:3000`. Untuk keperluan pengujian UAT lokal 3-role, Anda dapat beralih role secara instan (**Accounting**, **Maintenance**, **Administrator**) melalui pemilih sesi di bilah atas (*top bar*) berwarna merah `#EB232D` atau melalui halaman `/login`.

@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentProfile } from "@/lib/auth/session";
+import { getAemsState } from "@/lib/db/store";
+import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
+import { hasPermission } from "@/lib/permissions/rbac";
+
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const profile = await getCurrentProfile();
+    const { id } = await context.params;
+    const state = getAemsState();
+    const batch = state.import_batches.find((b) => b.id === id);
+    if (!batch) {
+      throw new AemsError("NOT_FOUND", "Batch import tidak ditemukan.", 404);
+    }
+    if (
+      batch.uploaded_by !== profile.id &&
+      !hasPermission(profile, "import:view_all")
+    ) {
+      throw new AemsError("FORBIDDEN", "Akses ditolak ke batch import pengguna lain.", 403);
+    }
+
+    return NextResponse.json({
+      data: batch,
+      rows: batch.rows || [],
+    });
+  } catch (err) {
+    const formatted = formatErrorResponse(err);
+    return NextResponse.json(formatted.body, { status: formatted.status });
+  }
+}
