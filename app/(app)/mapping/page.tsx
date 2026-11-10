@@ -42,19 +42,21 @@ function MappingContent() {
   );
 
   const loadAll = useCallback(async () => {
-    const [resA, resE, resR] = await Promise.all([
+    const [resA, resE, resR, resH] = await Promise.all([
       fetch("/api/v1/assets"),
       fetch("/api/v1/equipment"),
-      fetch("/api/v1/mapping-requests"),
+      fetch("/api/v1/mapping/requests"),
+      fetch("/api/v1/mapping/history"),
     ]);
     const jsonA = await resA.json();
     const jsonE = await resE.json();
     const jsonR = await resR.json();
+    const jsonH = await resH.json();
 
     setAssets(jsonA.data || []);
     setEquipmentList(jsonE.data || []);
-    setRequests(jsonR.data?.requests || []);
-    setHistory(jsonR.data?.history || []);
+    setRequests(Array.isArray(jsonR.data) ? jsonR.data : jsonR.data?.requests || []);
+    setHistory(Array.isArray(jsonH.data) ? jsonH.data : jsonR.data?.history || []);
   }, []);
 
   useEffect(() => {
@@ -67,14 +69,18 @@ function MappingContent() {
     const effectiveParentKind = requestType === "UNLINK" ? null : toParentKind === "UNMAPPED" ? null : toParentKind;
     const effectiveParentId = requestType === "UNLINK" ? null : toParentId || null;
 
-    const res = await fetch("/api/v1/mapping-requests", {
+    const res = await fetch("/api/v1/mapping/requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        request_type: requestType,
-        equipment_ids: [selectedEquipmentId],
-        to_parent_kind: effectiveParentKind,
-        to_parent_id: effectiveParentId,
+        items: [
+          {
+            equipment_id: selectedEquipmentId,
+            action_type: requestType,
+            to_parent_kind: effectiveParentKind,
+            to_parent_id: effectiveParentId,
+          },
+        ],
         reason,
       }),
     });
@@ -97,7 +103,7 @@ function MappingContent() {
 
   const handleReview = async (reqId: string, action: "APPROVE" | "REJECT") => {
     setFeedback(null);
-    const res = await fetch(`/api/v1/mapping-requests/${reqId}/${action.toLowerCase()}`, {
+    const res = await fetch(`/api/v1/mapping/requests/${reqId}/${action.toLowerCase()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ review_note: reviewNote || `${action} oleh Admin` }),
@@ -197,8 +203,8 @@ function MappingContent() {
               Formulir Pengajuan Perubahan Mapping
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(["LINK", "MOVE", "UNLINK", "REPLACE"] as MappingRequestType[]).map((t) => (
+            <div className="grid grid-cols-3 gap-2">
+              {(["LINK", "MOVE", "UNLINK"] as MappingRequestType[]).map((t) => (
                 <button
                   key={t}
                   type="button"

@@ -14,7 +14,7 @@ export default function ReconciliationPage() {
   const loadFindings = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/admin/reconciliation");
+      const res = await fetch("/api/v1/admin/reconciliation/scan");
       const json = await res.json();
       setFindings(json.data || []);
     } finally {
@@ -28,7 +28,7 @@ export default function ReconciliationPage() {
 
   const handleScan = async () => {
     setLoading(true);
-    const res = await fetch("/api/v1/admin/reconciliation", {
+    const res = await fetch("/api/v1/admin/reconciliation/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "SCAN" }),
@@ -39,12 +39,10 @@ export default function ReconciliationPage() {
   };
 
   const handleResolve = async (findingId: string, status: ReconciliationStatus) => {
-    await fetch("/api/v1/admin/reconciliation", {
-      method: "POST",
+    await fetch(`/api/v1/admin/findings/${findingId}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "RESOLVE",
-        finding_id: findingId,
         status,
         resolution_note: noteMap[findingId] || `Ditandai ${status}`,
       }),

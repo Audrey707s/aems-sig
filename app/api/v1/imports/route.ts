@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       }
       const modeStr = formData.get("commit_mode");
       if (modeStr) commitMode = String(modeStr) as CommitMode;
-      const defAct = formData.get("default_action");
+      const defAct = formData.get("default_action") || formData.get("default_duplicate_action");
       if (defAct) defaultAction = String(defAct) as DuplicateDecision;
     } else {
       // JSON body support (for structured API/integration tests and pre-parsed rows)
@@ -91,7 +91,11 @@ export async function POST(req: NextRequest) {
           415
         );
       }
-      rawRows = Array.isArray(body.raw_rows) ? body.raw_rows : [];
+      rawRows = Array.isArray(body.raw_rows)
+        ? body.raw_rows
+        : Array.isArray(body.rows)
+        ? body.rows
+        : [];
       fileSha256 =
         body.file_sha256 ||
         crypto
@@ -100,7 +104,7 @@ export async function POST(req: NextRequest) {
           .digest("hex");
       columnMap = body.column_map;
       commitMode = body.commit_mode;
-      defaultAction = body.default_action;
+      defaultAction = body.default_action || body.default_duplicate_action;
       headers = rawRows.length > 0 ? Object.keys(rawRows[0]) : [];
     }
 

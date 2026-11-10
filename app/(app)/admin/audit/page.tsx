@@ -11,7 +11,7 @@ export default function AuditTrailPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/v1/admin/audit-logs${entityType ? `?entity_type=${entityType}` : ""}`)
+    fetch(`/api/v1/audit-logs${entityType ? `?entity_type=${entityType}` : ""}`)
       .then((r) => r.json())
       .then((res) => setLogs(res.data || []))
       .finally(() => setLoading(false));

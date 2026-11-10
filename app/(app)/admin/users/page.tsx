@@ -31,10 +31,18 @@ export default function AdminUsersPage() {
 
   const handleUpdateUser = async (id: string, role: AppRole, is_active: boolean) => {
     setErrorMsg(null);
-    const res = await fetch(`/api/v1/admin/users/${id}`, {
-      method: "PATCH",
+    const targetUser = users.find((u) => u.id === id);
+    const res = await fetch(`/api/v1/admin/users`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, is_active }),
+      body: JSON.stringify({
+        id,
+        email: targetUser?.email || "",
+        full_name: targetUser?.full_name || "",
+        department: targetUser?.department || null,
+        role,
+        is_active,
+      }),
     });
     const json = await res.json();
     if (!res.ok) {

@@ -27,6 +27,12 @@ export async function GET(
 
     const state = getAemsState();
     const tree = getAssetEquipmentTree(asset.id, asOf, state);
+    const directEquipment = state.equipment.filter(
+      (e) =>
+        e.deleted_at === null &&
+        e.active_parent_kind === "ASSET" &&
+        e.active_parent_id === asset.id
+    );
     const specItems = state.equipment_spec_items.filter(
       (s) => s.asset_id === asset.id
     );
@@ -38,7 +44,15 @@ export async function GET(
     );
 
     return NextResponse.json({
-      data: asset,
+      data: {
+        ...asset,
+        asset,
+        category_name: asset.category_name,
+        location_name: asset.location_name,
+        direct_equipment: directEquipment,
+        history: mappingHistory,
+        audit_logs: auditLogs,
+      },
       tree,
       spec_items: specItems,
       mapping_history: mappingHistory,

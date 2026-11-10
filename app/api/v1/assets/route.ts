@@ -27,10 +27,15 @@ export async function GET(req: NextRequest) {
     }
 
     let items = getEnrichedAssets(false, profile.role).map((a) => {
-      const eqCount = activeEquipment.filter((e) => e.root_asset_id === a.id).length;
+      const totalEqCount = activeEquipment.filter((e) => e.root_asset_id === a.id).length;
+      const directEqCount = activeEquipment.filter(
+        (e) => e.active_parent_kind === "ASSET" && e.active_parent_id === a.id
+      ).length;
       return {
         ...a,
-        equipment_count: eqCount,
+        equipment_count: totalEqCount,
+        direct_equipment_count: directEqCount,
+        total_equipment_count: totalEqCount,
         mapping_status: mappedAssetIds.has(a.id) ? "MAPPED" : "UNMAPPED",
       };
     });

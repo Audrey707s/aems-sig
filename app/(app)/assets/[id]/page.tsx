@@ -29,7 +29,7 @@ export default function AssetDetailPage() {
     try {
       const [resAsset, resTree] = await Promise.all([
         fetch(`/api/v1/assets/${params.id}`),
-        fetch(`/api/v1/assets/${params.id}/hierarchy`),
+        fetch(`/api/v1/assets/${params.id}/tree`),
       ]);
       const jsonAsset = await resAsset.json();
       const jsonTree = await resTree.json();

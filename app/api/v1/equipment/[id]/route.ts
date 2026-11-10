@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
+  addEquipmentSpecItem,
   getAemsState,
   getEnrichedEquipment,
   getEquipmentBreadcrumb,
+  promoteSpecItemToEquipment,
   softDeleteEquipment,
   updateEquipment,
 } from "@/lib/db/store";
@@ -41,15 +43,63 @@ export async function GET(
     const auditLogs = state.audit_logs.filter(
       (l) => l.entity_type === "EQUIPMENT" && l.entity_id === eq.id
     );
+    const activeParentSlot =
+      state.equipment_active_parent.find((p) => p.equipment_id === eq.id) || null;
+    const rootAsset = eq.root_asset_id
+      ? state.assets.find((a) => a.id === eq.root_asset_id) || null
+      : null;
 
     return NextResponse.json({
-      data: eq,
+      data: {
+        ...eq,
+        equipment: eq,
+        active_parent: activeParentSlot,
+        root_asset: rootAsset,
+        direct_children: children,
+        specs: specItems,
+        history: movementHistory,
+      },
       breadcrumb,
       children,
       spec_items: specItems,
       movement_history: movementHistory,
       audit_logs: auditLogs,
     });
+  } catch (err) {
+    const formatted = formatErrorResponse(err);
+    return NextResponse.json(formatted.body, { status: formatted.status });
+  }
+}
+
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const profile = await getCurrentProfile();
+    const { id } = await context.params;
+    const body = await req.json();
+
+    if (body.action === "ADD_SPEC") {
+      const created = addEquipmentSpecItem(profile, {
+        equipment_id: id,
+        spec_name: String(body.spec_name || ""),
+        spec_value: String(body.spec_value || ""),
+        spec_group: body.spec_group ? String(body.spec_group) : "General",
+      });
+      return NextResponse.json({ data: created }, { status: 201 });
+    }
+
+    if (body.action === "PROMOTE_SPEC") {
+      const promoted = promoteSpecItemToEquipment(profile, {
+        spec_item_id: String(body.spec_item_id || ""),
+        equipment_no: String(body.equipment_no || ""),
+        reason: String(body.reason || "Promosi spesifikasi ke equipment resmi"),
+      });
+      return NextResponse.json({ data: promoted }, { status: 201 });
+    }
+
+    throw new AemsError("VALIDATION", "Tindakan pada equipment tidak dikenali.", 400);
   } catch (err) {
     const formatted = formatErrorResponse(err);
     return NextResponse.json(formatted.body, { status: formatted.status });
@@ -95,6 +145,9 @@ export async function DELETE(
     const profile = await getCurrentProfile();
     const { id } = await context.params;
     const body = await req.json().catch(() => ({}));
+    if (body.cascade_subtree !== undefined && body.cascade_descendants === undefined) {
+      body.cascade_descendants = Boolean(body.cascade_subtree);
+    }
     const parsed = softDeleteSchema.safeParse(body);
     if (!parsed.success) {
       throw new AemsError(

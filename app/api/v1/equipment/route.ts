@@ -15,13 +15,23 @@ export async function GET(req: NextRequest) {
     const status = sp.get("status") || "";
     const condition = sp.get("condition") || "";
     const locationId = sp.get("location_id") || "";
-    const mapping = sp.get("mapping") || ""; // "MAPPED" | "UNMAPPED" | ""
+    const mapping = sp.get("mapping") || (sp.get("unmapped_only") === "true" ? "UNMAPPED" : "");
     const sortBy = sp.get("sort_by") || "equipment_no";
     const sortDir = sp.get("sort_dir") === "desc" ? -1 : 1;
     const page = Math.max(Number(sp.get("page") || 1), 1);
     const pageSize = Math.min(Math.max(Number(sp.get("page_size") || 25), 1), 100);
 
-    let items = getEnrichedEquipment(false);
+    let items = getEnrichedEquipment(false).map((e) => ({
+      ...e,
+      is_unmapped: e.root_asset_id === null && e.active_parent_id === null,
+      parent_kind: e.active_parent_kind,
+      parent_label: e.active_parent_no
+        ? `${e.active_parent_kind}: ${e.active_parent_no}`
+        : "Belum Termapping",
+      child_count: state.equipment_relationships.filter(
+        (r) => r.parent_equipment_id === e.id && r.valid_to === null
+      ).length,
+    }));
 
     if (q) {
       items = items.filter(

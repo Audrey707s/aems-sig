@@ -40,3 +40,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  return PUT(req);
+}
