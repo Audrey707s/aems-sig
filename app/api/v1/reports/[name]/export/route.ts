@@ -9,9 +9,11 @@ import {
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { hasPermission } from "@/lib/permissions/rbac";
 
-export async function POST(
+async function exportReport(
   req: NextRequest,
-  context: { params: Promise<{ name: string }> }
+  context: { params: Promise<{ name: string }> },
+  formatInput: string,
+  filters: Record<string, string>
 ) {
   try {
     const profile = await getCurrentProfile();
@@ -20,9 +22,7 @@ export async function POST(
     }
 
     const { name } = await context.params;
-    const body = await req.json().catch(() => ({}));
-    const format = String(body.format || "EXCEL").toUpperCase() as "EXCEL" | "PDF";
-    const filters: Record<string, string> = body.filters || {};
+    const format = formatInput.toUpperCase() === "PDF" ? "PDF" : "EXCEL";
 
     const report = buildStandardReport(profile, name, filters);
     const filterSummary =
@@ -68,4 +68,14 @@ export async function POST(
     const formatted = formatErrorResponse(err);
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
+}
+
+export async function GET(req: NextRequest, context: { params: Promise<{ name: string }> }) {
+  const filters = Object.fromEntries(req.nextUrl.searchParams.entries());
+  return exportReport(req, context, req.nextUrl.searchParams.get("format") || "xlsx", filters);
+}
+
+export async function POST(req: NextRequest, context: { params: Promise<{ name: string }> }) {
+  const body = await req.json().catch(() => ({}));
+  return exportReport(req, context, String(body.format || "EXCEL"), body.filters || {});
 }
