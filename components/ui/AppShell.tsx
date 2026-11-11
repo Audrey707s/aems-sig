@@ -55,19 +55,19 @@ interface NavItem {
 const MAIN_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Pencarian Universal", href: "/search", icon: Search },
-  { label: "Master Asset (SAP)", href: "/assets", icon: Box, permission: "asset:read" },
-  { label: "Master Equipment", href: "/equipment", icon: Cpu, permission: "equipment:read" },
-  { label: "Unmapped Equipment", href: "/equipment/unmapped", icon: Unlink, permission: "equipment:read" },
-  { label: "Mapping & Hierarki", href: "/mapping", icon: GitBranch, permission: "equipment:read" },
-  { label: "Import Excel", href: "/imports", icon: FileSpreadsheet },
-  { label: "Laporan", href: "/reports", icon: BarChart3, permission: "report:read" },
+  { label: "Data Aset SAP", href: "/assets", icon: Box, permission: "asset:read" },
+  { label: "Data Equipment", href: "/equipment", icon: Cpu, permission: "equipment:read" },
+  { label: "Hierarki & Mapping", href: "/mapping", icon: GitBranch, permission: "equipment:read" },
+  { label: "Equipment Belum Terhubung", href: "/equipment/unmapped", icon: Unlink, permission: "equipment:read" },
+  { label: "Import Data Excel", href: "/imports", icon: FileSpreadsheet },
+  { label: "Laporan & Ekspor", href: "/reports", icon: BarChart3, permission: "report:read" },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { label: "Manajemen Pengguna", href: "/admin/users", icon: Users, permission: "users:manage", adminOnly: true },
-  { label: "Audit Trail", href: "/admin/audit", icon: ClipboardList, permission: "audit:view_full", adminOnly: true },
   { label: "Rekonsiliasi Data", href: "/admin/reconciliation", icon: ShieldAlert, permission: "reconciliation:read" },
-  { label: "Pengaturan", href: "/admin/settings", icon: Settings, permission: "settings:manage", adminOnly: true },
+  { label: "Riwayat Audit", href: "/admin/audit", icon: ClipboardList, permission: "audit:view_full", adminOnly: true },
+  { label: "Manajemen Pengguna", href: "/admin/users", icon: Users, permission: "users:manage", adminOnly: true },
+  { label: "Pengaturan Sistem", href: "/admin/settings", icon: Settings, permission: "settings:manage", adminOnly: true },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
