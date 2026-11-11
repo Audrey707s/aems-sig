@@ -6,46 +6,14 @@ import { FileSpreadsheet, FileText, Search } from "lucide-react";
 import { ReportName } from "@/lib/db/reports";
 
 const REPORT_Catalog: Array<{ name: ReportName; label: string; desc: string }> = [
-  {
-    name: "all-assets",
-    label: "1. Daftar Aset beserta Equipment",
-    desc: "Rekap jumlah equipment langsung & bertingkat untuk setiap aset SAP",
-  },
-  {
-    name: "all-equipment",
-    label: "2. Daftar Equipment per Aset",
-    desc: "Rincian equipment aktif yang terhubung ke aset induk SAP",
-  },
-  {
-    name: "equipment-without-asset",
-    label: "3. Equipment Belum Termapping",
-    desc: "Equipment aktif yang berdiri mandiri tanpa induk aset maupun equipment",
-  },
-  {
-    name: "assets-without-equipment",
-    label: "4. Aset Tanpa Equipment",
-    desc: "Aset SAP aktif yang belum memiliki equipment terhubung",
-  },
-  {
-    name: "all-equipment",
-    label: "5. Equipment per Lokasi & Kondisi",
-    desc: "Sebaran perangkat dan komponen berdasarkan lokasi pabrik & kondisi fisik",
-  },
-  {
-    name: "movement-history",
-    label: "6. Hierarki Bertingkat Equipment",
-    desc: "Jalur silsilah lengkap dari Aset Induk hingga sub-equipment terdalam",
-  },
-  {
-    name: "movement-history",
-    label: "7. Riwayat Perubahan Mapping",
-    desc: "Log historis pemasangan, pemindahan, dan pelepasan equipment",
-  },
-  {
-    name: "inconsistent-data",
-    label: "8. Ringkasan Rekonsiliasi Data",
-    desc: "Daftar temuan kualitas dan integritas data beserta status tindak lanjut",
-  },
+  { name: "all-assets", label: "1. Seluruh Aset SAP", desc: "Daftar aset dan jumlah equipment terkait" },
+  { name: "all-equipment", label: "2. Seluruh Equipment", desc: "Daftar perangkat, komponen, dan aset induk" },
+  { name: "equipment-without-asset", label: "3. Equipment Tanpa Aset", desc: "Equipment yang belum terhubung ke aset SAP" },
+  { name: "assets-without-equipment", label: "4. Aset Tanpa Equipment", desc: "Aset tanpa equipment terhubung" },
+  { name: "inconsistent-data", label: "5. Data Tidak Konsisten", desc: "Temuan validasi dan rekonsiliasi" },
+  { name: "movement-history", label: "6. Riwayat Perpindahan", desc: "Perubahan relasi dan perpindahan equipment" },
+  { name: "master-change-history", label: "7. Riwayat Perubahan Master", desc: "Jejak perubahan data master" },
+  { name: "import-history", label: "8. Riwayat Import", desc: "Riwayat pemrosesan data Excel" },
 ];
 
 function ReportsContent() {
