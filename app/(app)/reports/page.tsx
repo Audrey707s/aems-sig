@@ -3,46 +3,46 @@
 import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { FileSpreadsheet, FileText, Search } from "lucide-react";
-import { ReportName } from "@/lib/types/domain";
+import { ReportName } from "@/lib/db/reports";
 
 const REPORT_Catalog: Array<{ name: ReportName; label: string; desc: string }> = [
   {
-    name: "ASSET_EQUIPMENT_MATRIX",
+    name: "all-assets",
     label: "1. Daftar Aset beserta Equipment",
     desc: "Rekap jumlah equipment langsung & bertingkat untuk setiap aset SAP",
   },
   {
-    name: "EQUIPMENT_BY_ASSET",
+    name: "all-equipment",
     label: "2. Daftar Equipment per Aset",
     desc: "Rincian equipment aktif yang terhubung ke aset induk SAP",
   },
   {
-    name: "UNMAPPED_EQUIPMENT",
+    name: "equipment-without-asset",
     label: "3. Equipment Belum Termapping",
     desc: "Equipment aktif yang berdiri mandiri tanpa induk aset maupun equipment",
   },
   {
-    name: "ASSETS_WITHOUT_EQUIPMENT",
+    name: "assets-without-equipment",
     label: "4. Aset Tanpa Equipment",
     desc: "Aset SAP aktif yang belum memiliki equipment terhubung",
   },
   {
-    name: "EQUIPMENT_BY_LOCATION",
+    name: "all-equipment",
     label: "5. Equipment per Lokasi & Kondisi",
     desc: "Sebaran perangkat dan komponen berdasarkan lokasi pabrik & kondisi fisik",
   },
   {
-    name: "HIERARCHY_LINEAGE",
+    name: "movement-history",
     label: "6. Hierarki Bertingkat Equipment",
     desc: "Jalur silsilah lengkap dari Aset Induk hingga sub-equipment terdalam",
   },
   {
-    name: "MAPPING_CHANGE_HISTORY",
+    name: "movement-history",
     label: "7. Riwayat Perubahan Mapping",
     desc: "Log historis pemasangan, pemindahan, dan pelepasan equipment",
   },
   {
-    name: "RECONCILIATION_SUMMARY",
+    name: "inconsistent-data",
     label: "8. Ringkasan Rekonsiliasi Data",
     desc: "Daftar temuan kualitas dan integritas data beserta status tindak lanjut",
   },
@@ -50,7 +50,7 @@ const REPORT_Catalog: Array<{ name: ReportName; label: string; desc: string }> =
 
 function ReportsContent() {
   const searchParams = useSearchParams();
-  const initialReport = (searchParams.get("report") as ReportName) || "ASSET_EQUIPMENT_MATRIX";
+  const initialReport = (searchParams.get("report") as ReportName) || "all-assets";
 
   const [selectedReport, setSelectedReport] = useState<ReportName>(initialReport);
   const [q, setQ] = useState("");
