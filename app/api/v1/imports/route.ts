@@ -1,3 +1,4 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -7,7 +8,7 @@ import { CommitMode, DuplicateDecision, ImportType } from "@/lib/types/domain";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { hasPermission } from "@/lib/permissions/rbac";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     const state = getAemsState();
@@ -27,7 +28,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const state = getAemsState();
@@ -128,3 +129,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

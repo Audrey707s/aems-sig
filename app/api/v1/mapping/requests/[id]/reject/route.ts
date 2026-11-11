@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { decideMappingRequest } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -27,3 +28,5 @@ export async function POST(
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const POST = withAemsPersistence(handlePOST);

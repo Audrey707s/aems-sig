@@ -1,3 +1,4 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getAemsState, getAssetEquipmentTree } from "@/lib/db/store";
@@ -19,7 +20,7 @@ function mapEquipmentTreeNode(node: EquipmentTreeNode): HierarchyNode {
   };
 }
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -55,3 +56,5 @@ export async function GET(
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);

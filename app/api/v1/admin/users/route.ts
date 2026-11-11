@@ -1,10 +1,11 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getAemsState, manageUserProfile } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { hasPermission } from "@/lib/permissions/rbac";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     if (!hasPermission(profile, "users:manage")) {
@@ -22,7 +23,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const body = await req.json();
@@ -40,3 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

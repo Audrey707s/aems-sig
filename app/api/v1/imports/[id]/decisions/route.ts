@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { updateImportBatchDecisions } from "@/lib/db/store";
 import { formatErrorResponse } from "@/lib/utils/errors";
 
-export async function PUT(
+async function handlePUT(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -22,3 +23,5 @@ export async function PUT(
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const PUT = withAemsPersistence(handlePUT);

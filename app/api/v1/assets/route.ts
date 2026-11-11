@@ -1,10 +1,11 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { createAsset, getAemsState, getEnrichedAssets } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { createAssetSchema } from "@/lib/utils/schemas";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const state = getAemsState();
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const body = await req.json();
@@ -114,3 +115,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

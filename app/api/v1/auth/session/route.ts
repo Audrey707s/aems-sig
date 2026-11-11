@@ -1,3 +1,4 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getAemsState, resetAemsState } from "@/lib/db/store";
 import { AEMS_SESSION_COOKIE, getCurrentProfile } from "@/lib/auth/session";
@@ -5,7 +6,7 @@ import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     const state = getAemsState();
@@ -120,3 +121,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);

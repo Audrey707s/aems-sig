@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getAemsState, runReconciliationScan } from "@/lib/db/store";
 import { formatErrorResponse } from "@/lib/utils/errors";
 
-export async function GET() {
+async function handleGET() {
   try {
     await getCurrentProfile();
     const state = getAemsState();
@@ -14,7 +15,7 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+async function handlePOST() {
   try {
     const profile = await getCurrentProfile();
     const findings = runReconciliationScan(profile);
@@ -24,3 +25,7 @@ export async function POST() {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

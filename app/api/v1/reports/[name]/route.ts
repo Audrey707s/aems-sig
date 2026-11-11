@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { buildStandardReport } from "@/lib/db/reports";
 import { formatErrorResponse } from "@/lib/utils/errors";
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   context: { params: Promise<{ name: string }> }
 ) {
@@ -22,3 +23,5 @@ export async function GET(
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);

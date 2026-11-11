@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "./client";
-import { AEMS_SESSION_COOKIE } from "@/lib/auth/session";
+import { AEMS_SESSION_COOKIE } from "@/lib/auth/constants";
 
 const PUBLIC_PATHS = ["/login", "/api/v1/auth/session"];
 

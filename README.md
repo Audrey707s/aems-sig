@@ -47,4 +47,14 @@ npm test
 npm run dev
 ```
 
-Buka `http://localhost:3000`. Untuk keperluan pengujian UAT lokal 3-role, Anda dapat beralih role secara instan (**Accounting**, **Maintenance**, **Administrator**) melalui pemilih sesi di bilah atas (*top bar*) berwarna merah `#EB232D` atau melalui halaman `/login`.
+Buka `http://localhost:3000`. Konfigurasi `AEMS_STORAGE_MODE=supabase` mengaktifkan autentikasi Supabase dan penyimpanan persisten di seluruh API. Jalankan migrasi tambahan `supabase/migrations/20261111201516_persistent_runtime_repository.sql` setelah skema awal. Semua URL/key harus berasal dari proyek AEMS yang sama; service-role key hanya tersedia di server.
+
+Untuk pengembangan offline, gunakan `AEMS_STORAGE_MODE=local-store` secara eksplisit. Mode ini memakai data contoh sementara dan tidak diizinkan pada deployment production. Pemilih peran/reset contoh memerlukan `NEXT_PUBLIC_AEMS_DEMO_MODE=true` dan tidak tersedia pada database production.
+
+## Penyimpanan persisten
+
+Setiap API memverifikasi akun aktif, membaca satu snapshot konsisten dari tabel Postgres, dan menjalankan domain logic di konteks request yang terisolasi. Perubahan baris, relasi, import, serta audit dikirim bersama melalui RPC `aems_apply_changes`; respons sukses baru dikirim setelah transaksi berhasil. Tidak ada penulisan file lokal atau ketergantungan pada memori proses Vercel untuk menyimpan data.
+
+RPC mengambil lock transaksi dan memeriksa revisi database. Penulisan berdasarkan revisi lama menghasilkan HTTP 409 dan pengguna harus memuat ulang; sistem tidak mengulang request mutasi secara diam-diam. Trigger revisi juga mencakup perubahan melalui dashboard SQL. Riwayat tidak dihapus atau ditimpa, dan penghapusan master tetap berupa penonaktifan. Fungsi repository hanya dapat dipanggil oleh service-role server, sedangkan RLS tetap aktif pada tabel publik.
+
+Repository saat ini membaca snapshot domain lengkap untuk mempertahankan aturan lintas modul pada MVP. Volume import besar memerlukan pengukuran ukuran payload/waktu eksekusi dan pengembangan pemrosesan bertahap; tidak ada klaim kapasitas tanpa pengujian beban.

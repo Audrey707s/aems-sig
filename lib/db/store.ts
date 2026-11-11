@@ -29,6 +29,7 @@ import {
   Profile,
   ReconciliationFinding,
 } from "@/lib/types/domain";
+import { aemsRequestState } from "@/lib/db/context";
 import { AemsError } from "@/lib/utils/errors";
 import {
   buildAssetCompositeKey,
@@ -43,6 +44,11 @@ const globalForAems = globalThis as unknown as {
 };
 
 export function getAemsState(): AemsDatabaseState {
+  const request = aemsRequestState.getStore();
+  if (request) return request.state;
+  if (process.env.AEMS_STORAGE_MODE === "supabase" || process.env.VERCEL_ENV === "production") {
+    throw new AemsError("INTERNAL_ERROR", "Koneksi data belum tersedia. Silakan coba kembali.", 503);
+  }
   if (!globalForAems.__aemsState) {
     globalForAems.__aemsState = createInitialSeedState();
   }
@@ -50,6 +56,9 @@ export function getAemsState(): AemsDatabaseState {
 }
 
 export function resetAemsState(): AemsDatabaseState {
+  if (process.env.AEMS_STORAGE_MODE === "supabase") {
+    throw new AemsError("FORBIDDEN", "Reset data contoh dinonaktifkan pada database.", 403);
+  }
   globalForAems.__aemsState = createInitialSeedState();
   return globalForAems.__aemsState;
 }
