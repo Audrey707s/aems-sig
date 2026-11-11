@@ -286,7 +286,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Accessible mobile navigation: sidebar is hidden below lg breakpoint. */}
         <nav aria-label="Navigasi utama mobile" className="lg:hidden flex gap-1.5 overflow-x-auto border-b border-[#E8E2DB] bg-white px-3 py-2">
-          {[...MAIN_NAV, ...ADMIN_NAV].filter((item) => !item.permission || can(item.permission)).map((item) => {
+          {MAIN_NAV.filter((item) => !item.permission || can(item.permission)).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
             return (
