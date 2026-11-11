@@ -45,14 +45,14 @@ function TreeNodeItem({
   return (
     <div className="select-none">
       <div
-        style={{ paddingLeft: `${level * 20}px` }}
-        className={`flex items-center justify-between py-2 px-2.5 rounded-lg transition group ${
+        style={{ paddingLeft: `${Math.min(level, 5) * 8}px` }}
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 px-2.5 rounded-lg transition group ${
           isHighlighted
             ? "bg-[#E8EEF7] border border-[#1A3263]/30"
             : "hover:bg-[#F6F4F0]"
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-start sm:items-center gap-2 min-w-0">
           {hasChildren ? (
             <button
               type="button"
@@ -100,7 +100,7 @@ function TreeNodeItem({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           {node.condition && (
             <span
               className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
@@ -128,8 +128,8 @@ function TreeNodeItem({
             node.specs.map((sp) => (
               <div
                 key={sp.id}
-                style={{ paddingLeft: `${(level + 1) * 20}px` }}
-                className="flex items-center justify-between py-1.5 px-2.5 text-xs text-[#547792] hover:bg-[#F6F4F0] rounded-lg"
+                style={{ paddingLeft: `${Math.min(level + 1, 5) * 8}px` }}
+                className="flex flex-wrap items-center justify-between gap-2 py-1.5 px-2.5 text-xs text-[#547792] hover:bg-[#F6F4F0] rounded-lg"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-5" />
