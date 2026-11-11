@@ -75,7 +75,6 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
     { label: "Pengaturan", href: "/admin/settings", icon: Settings, permission: "settings:manage" },
   ] },
 ];
-const MAIN_NAV = NAV_GROUPS.flatMap(group => group.items);
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
