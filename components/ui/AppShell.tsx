@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Box,
@@ -80,6 +80,7 @@ const MAIN_NAV = NAV_GROUPS.flatMap(group => group.items);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -328,7 +329,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       const Icon = item.icon;
                       const [path, query] = item.href.split("?");
                       const isActive = pathname === path || (path !== "/dashboard" && path !== "/equipment" && pathname.startsWith(path + "/"));
-                      const exactActive = query ? pathname === path : isActive;
+                      const exactActive = query
+                        ? pathname === path && query.split("&").every(part => {
+                            const [key, value] = part.split("=");
+                            return searchParams.get(key) === value;
+                          })
+                        : isActive && !(path === "/mapping" && searchParams.get("tab") === "inbox");
                       return <Link key={item.href} href={item.href} aria-current={exactActive ? "page" : undefined}
                         className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${exactActive ? "border-l-4 border-[#FAB95B] bg-[#1A3263] text-white" : "text-[#1A3263]/80 hover:bg-[#E8E2DB]/50"}`}>
                         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" /><span>{item.label}</span>
