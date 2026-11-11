@@ -52,23 +52,32 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
-const MAIN_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Pencarian Universal", href: "/search", icon: Search },
-  { label: "Data Aset SAP", href: "/assets", icon: Box, permission: "asset:read" },
-  { label: "Data Equipment", href: "/equipment", icon: Cpu, permission: "equipment:read" },
-  { label: "Hierarki & Mapping", href: "/mapping", icon: GitBranch, permission: "equipment:read" },
-  { label: "Equipment Belum Terhubung", href: "/equipment/unmapped", icon: Unlink, permission: "equipment:read" },
-  { label: "Import Data Excel", href: "/imports", icon: FileSpreadsheet },
-  { label: "Laporan & Ekspor", href: "/reports", icon: BarChart3, permission: "report:read" },
+const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
+  { title: "UTAMA", items: [
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Pencarian", href: "/search", icon: Search },
+  ] },
+  { title: "DATA MASTER", items: [
+    { label: "Master Asset", href: "/assets", icon: Box, permission: "asset:read" },
+    { label: "Master Equipment", href: "/equipment", icon: Cpu, permission: "equipment:read" },
+  ] },
+  { title: "RELASI & OPERASIONAL", items: [
+    { label: "Mapping & Hierarki", href: "/mapping", icon: GitBranch, permission: "mapping:request" },
+    { label: "Persetujuan Mapping", href: "/mapping?tab=inbox", icon: ClipboardList, permission: "mapping:approve" },
+    { label: "Import Excel", href: "/imports", icon: FileSpreadsheet },
+  ] },
+  { title: "MONITORING", items: [
+    { label: "Laporan", href: "/reports", icon: BarChart3, permission: "report:read" },
+    { label: "Rekonsiliasi", href: "/admin/reconciliation", icon: ShieldAlert, permission: "reconciliation:read" },
+    { label: "Audit Trail", href: "/admin/audit", icon: ClipboardList, permission: "audit:view_full" },
+  ] },
+  { title: "PENGATURAN", items: [
+    { label: "Pengguna", href: "/admin/users", icon: Users, permission: "users:manage" },
+    { label: "Pengaturan", href: "/admin/settings", icon: Settings, permission: "settings:manage" },
+  ] },
 ];
-
-const ADMIN_NAV: NavItem[] = [
-  { label: "Rekonsiliasi Data", href: "/admin/reconciliation", icon: ShieldAlert, permission: "reconciliation:read" },
-  { label: "Riwayat Audit", href: "/admin/audit", icon: ClipboardList, permission: "audit:view_full", adminOnly: true },
-  { label: "Manajemen Pengguna", href: "/admin/users", icon: Users, permission: "users:manage", adminOnly: true },
-  { label: "Pengaturan Sistem", href: "/admin/settings", icon: Settings, permission: "settings:manage", adminOnly: true },
-];
+const MAIN_NAV = NAV_GROUPS.flatMap(group => group.items);
+const ADMIN_NAV: NavItem[] = [];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -310,70 +319,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              {/* Main Navigation */}
-              <div>
-                <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[#547792]">
-                  Modul Utama
-                </div>
-                <nav className="space-y-1">
-                  {MAIN_NAV.map((item) => {
-                    if (item.permission && !can(item.permission)) return null;
-                    const Icon = item.icon;
-                    const isActive =
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" &&
-                        item.href !== "/equipment" &&
-                        pathname.startsWith(item.href)) ||
-                      (item.href === "/equipment" &&
-                        pathname.startsWith("/equipment") &&
-                        !pathname.startsWith("/equipment/unmapped"));
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                          isActive
-                            ? "bg-[#1A3263] text-white font-semibold shadow-sm border-l-4 border-[#FAB95B]"
-                            : "text-[#1A3263]/80 hover:bg-[#E8E2DB]/50 hover:text-[#1A3263]"
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 ${isActive ? "text-[#FAB95B]" : "text-[#547792]"}`} />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-
-              {/* Governance & Admin Navigation */}
-              <div>
-                <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[#547792]">
-                  Tata Kelola &amp; Admin
-                </div>
-                <nav className="space-y-1">
-                  {ADMIN_NAV.map((item) => {
-                    const allowed = item.permission ? can(item.permission) : true;
-                    if (!allowed) return null;
-                    const Icon = item.icon;
-                    const isActive = pathname.startsWith(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                          isActive
-                            ? "bg-[#1A3263] text-white font-semibold shadow-sm border-l-4 border-[#FAB95B]"
-                            : "text-[#1A3263]/80 hover:bg-[#E8E2DB]/50 hover:text-[#1A3263]"
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 ${isActive ? "text-[#FAB95B]" : "text-[#547792]"}`} />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
+              <nav aria-label="Navigasi utama" className="space-y-5">
+                {NAV_GROUPS.map(group => {
+                  const items = group.items.filter(item => !item.permission || can(item.permission));
+                  if (!items.length) return null;
+                  return <div key={group.title}>
+                    <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-[#547792]">{group.title}</div>
+                    <div className="space-y-1">{items.map(item => {
+                      const Icon = item.icon;
+                      const [path, query] = item.href.split("?");
+                      const isActive = pathname === path || (path !== "/dashboard" && path !== "/equipment" && pathname.startsWith(path + "/"));
+                      const exactActive = query ? pathname === path : isActive;
+                      return <Link key={item.href} href={item.href} aria-current={exactActive ? "page" : undefined}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${exactActive ? "border-l-4 border-[#FAB95B] bg-[#1A3263] text-white" : "text-[#1A3263]/80 hover:bg-[#E8E2DB]/50"}`}>
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" /><span>{item.label}</span>
+                      </Link>;
+                    })}</div>
+                  </div>;
+                })}
+              </nav>
             </div>
 
             <div className="p-4 border-t border-[#E8E2DB] bg-[#F6F4F0]/50 text-[11px] text-[#547792] space-y-1">
