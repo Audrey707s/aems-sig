@@ -7,7 +7,7 @@ import {
   getEnrichedAssets,
   getEnrichedEquipment,
 } from "@/lib/db/store";
-import { AppRole, Profile } from "@/lib/types/domain";
+import { Profile } from "@/lib/types/domain";
 import { hasPermission } from "@/lib/permissions/rbac";
 import { AemsError } from "@/lib/utils/errors";
 
