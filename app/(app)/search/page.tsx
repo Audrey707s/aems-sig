@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, Box, Cpu, GitBranch } from "lucide-react";
 
 type AssetResult = { id: string; sap_asset_no: string; sap_sub_no: string; name: string; status: string; location_name?: string; attached_equipment_count: number; attached_equipment_nos: string[] };
 type EquipmentResult = { id: string; equipment_no: string; name: string; kind: string; condition: string; root_asset_no?: string | null; root_asset_id?: string | null; active_parent_no?: string | null; breadcrumb?: Array<{ id: string; code: string; name: string; kind: string }> };
-export default function UniversalSearchPage() {
+function UniversalSearchResults() {
   const params = useSearchParams();
   const q = params.get("q")?.trim() || "";
   const [results, setResults] = useState<{assets: AssetResult[]; equipment: EquipmentResult[]}>({assets: [], equipment: []});
@@ -42,3 +42,4 @@ export default function UniversalSearchPage() {
     </div>}
   </div>;
 }
+\nexport default function UniversalSearchPage() { return <Suspense fallback={<p className="p-4 text-sm">Memuat pencarian...</p>}><UniversalSearchResults /></Suspense>; }\n
