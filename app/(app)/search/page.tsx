@@ -42,4 +42,5 @@ function UniversalSearchResults() {
     </div>}
   </div>;
 }
-\nexport default function UniversalSearchPage() { return <Suspense fallback={<p className="p-4 text-sm">Memuat pencarian...</p>}><UniversalSearchResults /></Suspense>; }\n
+
+export default function UniversalSearchPage() { return <Suspense fallback={<p className="p-4 text-sm">Memuat pencarian...</p>}><UniversalSearchResults /></Suspense>; }
