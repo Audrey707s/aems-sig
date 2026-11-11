@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { AppRole } from "@/lib/types/domain";
 
@@ -41,8 +42,10 @@ export default function LoginPage() {
         <div className="bg-[#1A3263] px-6 py-7 text-white border-b-4 border-[#FAB95B]">
           <div className="flex items-center gap-4">
             <div className="bg-white rounded-xl px-3.5 py-2 shadow-sm border border-[#E8E2DB]">
-              <img
+              <Image
                 src="/logo-aems.png"
+                width={140}
+                height={40}
                 alt="AEMS Logo"
                 className="h-9 w-auto object-contain"
               />
