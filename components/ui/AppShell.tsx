@@ -77,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [resetting, setResetting] = useState(false);
+  const demoControlsEnabled = process.env.NEXT_PUBLIC_AEMS_DEMO_MODE === "true";
 
   const fetchUser = useCallback(async () => {
     try {
@@ -111,6 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const handleResetDemo = async () => {
+    if (!demoControlsEnabled || !window.confirm("Reset seluruh data demo ke kondisi awal? Perubahan data demo akan hilang.")) return;
     setResetting(true);
     try {
       await fetch("/api/v1/auth/session", {
@@ -184,7 +186,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Action Controls: Reset Data & Active User Switcher */}
           <div className="flex items-center gap-3">
-            <button
+            {demoControlsEnabled && <button
               type="button"
               onClick={handleResetDemo}
               disabled={resetting}
@@ -193,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <RefreshCw className={`w-3.5 h-3.5 text-[#FAB95B] ${resetting ? "animate-spin" : ""}`} />
               <span>Reset Data</span>
-            </button>
+            </button>}
 
             <div className="relative">
               <button
@@ -215,7 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <ChevronDown className="w-4 h-4 text-[#E8E2DB]" />
               </button>
 
-              {roleDropdownOpen && (
+              {roleDropdownOpen && demoControlsEnabled && (
                 <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white shadow-xl border border-[#E8E2DB] py-2 z-50 text-[#1A3263]">
                   <div className="px-3.5 py-2 border-b border-[#E8E2DB]">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
@@ -276,6 +278,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
+
+        {/* Accessible mobile navigation: sidebar is hidden below lg breakpoint. */}
+        <nav aria-label="Navigasi utama mobile" className="lg:hidden flex gap-1.5 overflow-x-auto border-b border-[#E8E2DB] bg-white px-3 py-2">
+          {[...MAIN_NAV, ...ADMIN_NAV].filter((item) => !item.permission || can(item.permission)).map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+            return (
+              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${active ? "bg-[#1A3263] text-white" : "text-[#1A3263] hover:bg-[#F6F4F0]"}`}>
+                <Icon className="h-4 w-4" aria-hidden="true" />{item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
         {/* Body Layout with Left Sidebar */}
         <div className="flex flex-1">
@@ -341,7 +357,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <nav className="space-y-1">
                   {ADMIN_NAV.map((item) => {
                     const allowed = item.permission ? can(item.permission) : true;
-                    if (!allowed && item.adminOnly) return null;
+                    if (!allowed) return null;
                     const Icon = item.icon;
                     const isActive = pathname.startsWith(item.href);
                     return (
