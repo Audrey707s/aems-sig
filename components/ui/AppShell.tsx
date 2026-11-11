@@ -54,6 +54,7 @@ interface NavItem {
 
 const MAIN_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Pencarian Universal", href: "/search", icon: Search },
   { label: "Master Asset (SAP)", href: "/assets", icon: Box, permission: "asset:read" },
   { label: "Master Equipment", href: "/equipment", icon: Cpu, permission: "equipment:read" },
   { label: "Unmapped Equipment", href: "/equipment/unmapped", icon: Unlink, permission: "equipment:read" },
@@ -131,11 +132,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     e.preventDefault();
     const q = globalSearch.trim();
     if (!q) return;
-    if (q.toUpperCase().startsWith("EQ")) {
-      router.push(`/equipment?q=${encodeURIComponent(q)}`);
-    } else {
-      router.push(`/assets?q=${encodeURIComponent(q)}`);
-    }
+    router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
   const can = useCallback(
