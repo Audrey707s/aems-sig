@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -77,12 +77,13 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, initialUser }: { children: React.ReactNode; initialUser: Profile }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [user, setUser] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<Profile | null>(initialUser);
+  const [loading, setLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -101,8 +102,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    setRoleDropdownOpen(false);
+  }, [pathname, searchParams]);
+
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setRoleDropdownOpen(false);
+    };
+    const closeEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setRoleDropdownOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeEscape);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const res = await fetch("/api/v1/auth/session", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "LOGOUT" }),
+    });
+    if (res.ok) { window.location.assign("/login"); }
+  };
 
   const switchRole = async (role: AppRole) => {
     setRoleDropdownOpen(false);
@@ -153,6 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, loading, switchRole, refreshUser: fetchUser, can }}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:p-3">Lewati ke konten</a>
       <div className="min-h-screen flex flex-col bg-[#F6F4F0] text-[#1A3263]">
         {/* Top Navigation Bar — Brand Navy #1A3263 with Amber #FAB95B bottom accent */}
         <header className="sticky top-0 z-30 h-16 bg-[#1A3263] text-white shadow-md border-b-2 border-[#FAB95B] flex items-center justify-between px-4 lg:px-6">
@@ -205,9 +230,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span>Reset Data</span>
             </button>}
 
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
                 type="button"
+                aria-expanded={roleDropdownOpen}
+                aria-controls="account-menu"
+                aria-label="Menu akun"
                 onClick={() => setRoleDropdownOpen((v) => !v)}
                 className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg px-3 py-1.5 text-left transition"
               >
@@ -225,9 +253,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <ChevronDown className="w-4 h-4 text-[#E8E2DB]" />
               </button>
 
-              {roleDropdownOpen && demoControlsEnabled && (
-                <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white shadow-xl border border-[#E8E2DB] py-2 z-50 text-[#1A3263]">
-                  <div className="px-3.5 py-2 border-b border-[#E8E2DB]">
+              {roleDropdownOpen && (
+                <div id="account-menu" className="absolute right-0 mt-2 w-72 rounded-xl bg-white shadow-xl border border-[#E8E2DB] py-2 z-50 text-[#1A3263]">
+                  {demoControlsEnabled && <><div className="px-3.5 py-2 border-b border-[#E8E2DB]">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
                       Beralih Peran Akses
                     </div>
@@ -264,6 +292,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     );
                   })}
 
+                  </>}
                   <div className="border-t border-[#E8E2DB] mt-1 pt-1">
                     <Link
                       href="/profile"
@@ -272,14 +301,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     >
                       Profil &amp; Hak Akses Saya
                     </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setRoleDropdownOpen(false)}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
                       className="flex items-center gap-2 px-3.5 py-2 text-xs text-[#547792] hover:text-[#1A3263] hover:bg-[#F6F4F0]"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      <span>Halaman Masuk</span>
-                    </Link>
+                      <span>Keluar</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -333,7 +362,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="space-y-1">{items.map(item => {
                       const Icon = item.icon;
                       const [path, query] = item.href.split("?");
-                      const isActive = pathname === path || (path !== "/dashboard" && path !== "/equipment" && pathname.startsWith(path + "/"));
+                      const isActive = pathname === path || (path !== "/dashboard" && pathname.startsWith(path + "/"));
                       const exactActive = query
                         ? pathname === path && query.split("&").every(part => {
                             const [key, value] = part.split("=");
@@ -359,8 +388,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
-            {children}
+          <main id="main-content" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+            <div key={`${pathname}?${searchParams.toString()}`} className="page-content">{children}</div>
           </main>
         </div>
       </div>

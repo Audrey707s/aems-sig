@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, Suspense } from "react";
+import React, { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Plus, Search, ExternalLink, AlertCircle } from "lucide-react";
@@ -30,10 +30,16 @@ function AssetsContent() {
   const searchParams = useSearchParams();
   const initialQ = searchParams.get("q") || "";
 
+  const { current: requestSequence } = useRef({ value: 0 });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [references, setReferences] = useState<{ categories: Array<{id: string; name: string}>; locations: Array<{id: string; name: string}> }>({categories: [], locations: []});
   const [items, setItems] = useState<EnrichedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQ);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(searchParams.get("status") || "");
+  const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -43,39 +49,53 @@ function AssetsContent() {
     sap_sub_no: "0000",
     name: "",
     description: "",
-    cost_center: "CC-1100",
-    acquisition_date: "2026-11-10",
-    acquisition_value: 25000000,
-    asset_category_id: "10000000-0000-4000-8000-000000000001",
-    location_id: "30000000-0000-4000-8000-000000000001",
+    cost_center: "",
+    acquisition_date: "",
+    acquisition_value: "",
+    asset_category_id: "",
+    location_id: "",
     status: "ACTIVE",
   });
 
   const loadAssets = useCallback(async () => {
+    const sequence = ++requestSequence.value;
     setLoading(true);
+    setErrorMsg(null);
     try {
       const params = new URLSearchParams();
+      params.set("page", String(page));
       if (q) params.set("q", q);
       if (status) params.set("status", status);
       const res = await fetch(`/api/v1/assets?${params.toString()}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message || "Data aset gagal dimuat.");
+      if (sequence !== requestSequence.value) return;
       setItems(json.data || []);
+      setTotal(json.meta?.total || 0);
+      setTotalPages(json.meta?.total_pages || 1);
+      setReferences({categories: json.references?.asset_categories || [], locations: json.references?.locations || []});
+    } catch (error) {
+      if (sequence === requestSequence.value) setErrorMsg(error instanceof Error ? error.message : "Periksa koneksi dan coba kembali.");
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.value) setLoading(false);
     }
-  }, [q, status]);
+  }, [q, status, page, requestSequence]);
 
   useEffect(() => {
-    loadAssets();
-  }, [loadAssets]);
+    const timer = setTimeout(() => { void loadAssets(); }, 200);
+    return () => { clearTimeout(timer); requestSequence.value++; };
+  }, [loadAssets, requestSequence]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     setErrorMsg(null);
+    try {
     const res = await fetch("/api/v1/assets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({ ...formData, acquisition_value: formData.acquisition_value === "" ? null : Number(formData.acquisition_value), acquisition_date: formData.acquisition_date || null, asset_category_id: formData.asset_category_id || null, location_id: formData.location_id || null }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -85,6 +105,8 @@ function AssetsContent() {
     setShowCreateModal(false);
     setFormData((prev) => ({ ...prev, sap_asset_no: "", name: "", description: "" }));
     loadAssets();
+    } catch { setErrorMsg("Data gagal disimpan. Periksa koneksi dan coba kembali."); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -94,9 +116,6 @@ function AssetsContent() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Master Asset (SAP)
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Daftar induk aset tetap perusahaan beserta ringkasan keterhubungan equipment.
-          </p>
         </div>
 
         {can("asset:write") && (
@@ -121,25 +140,24 @@ function AssetsContent() {
           <input
             type="text"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => { setQ(e.target.value); setPage(1); } }
             placeholder="Cari Nomor Aset SAP, Nama Aset, Serial, atau Cost Center..."
             className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-[#F6F4F0]/50 focus:bg-white outline-none focus:border-[#1A3263]"
           />
         </div>
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => { setStatus(e.target.value); setPage(1); } }
           className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
         >
           <option value="">Semua Status</option>
           <option value="ACTIVE">ACTIVE</option>
           <option value="INACTIVE">INACTIVE</option>
-          <option value="UNDER_MAINTENANCE">UNDER_MAINTENANCE</option>
-          <option value="RETIRED">RETIRED</option>
           <option value="DISPOSED">DISPOSED</option>
         </select>
       </div>
 
+      {errorMsg && !showCreateModal && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMsg} <button type="button" onClick={() => void loadAssets()} className="ml-3 underline">Coba kembali</button></div>}
       {/* Table */}
       <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -232,6 +250,14 @@ function AssetsContent() {
       </div>
 
       {/* Create Asset Modal */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <span role="status">{total} data ditemukan · Halaman {page} dari {totalPages}</span>
+        <div className="flex gap-2">
+          <button type="button" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border bg-white px-3 py-2">Sebelumnya</button>
+          <button type="button" disabled={loading || page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-lg border bg-white px-3 py-2">Berikutnya</button>
+        </div>
+      </div>
+
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-[#1A3263]/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#E8E2DB] space-y-4">
@@ -254,7 +280,7 @@ function AssetsContent() {
             )}
 
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-semibold text-[#1A3263] mb-1">Company Code *</label>
                   <input
@@ -316,13 +342,27 @@ function AssetsContent() {
                     min={0}
                     value={formData.acquisition_value}
                     onChange={(e) =>
-                      setFormData({ ...formData, acquisition_value: Number(e.target.value) })
+                      setFormData({ ...formData, acquisition_value: e.target.value })
                     }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="font-semibold">Kategori
+                  <select value={formData.asset_category_id} onChange={e => setFormData({...formData, asset_category_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                    <option value="">Pilih kategori</option>
+                    {references.categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+                <label className="font-semibold">Lokasi
+                  <select value={formData.location_id} onChange={e => setFormData({...formData, location_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                    <option value="">Pilih lokasi</option>
+                    {references.locations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+              </div>
               <div>
                 <label className="block font-semibold text-[#1A3263] mb-1">Deskripsi</label>
                 <textarea
@@ -343,6 +383,7 @@ function AssetsContent() {
                 </button>
                 <button
                   type="submit"
+                  disabled={saving}
                   className="px-4 py-2 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white font-bold"
                 >
                   Simpan Aset

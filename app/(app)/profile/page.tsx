@@ -35,9 +35,6 @@ export default function ProfilePage() {
           <UserCheck className="w-6 h-6 text-[#547792]" />
           <span>Profil &amp; Hak Akses Saya</span>
         </h1>
-        <p className="text-sm text-[#547792] mt-0.5">
-          Informasi akun pengguna aktif dan daftar kewenangan akses di dalam sistem.
-        </p>
       </div>
 
       <div className="p-6 rounded-xl bg-white border border-[#E8E2DB] shadow-sm space-y-4 text-xs">

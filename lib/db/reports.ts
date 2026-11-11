@@ -76,7 +76,8 @@ export function buildStandardReport(
         rows = rows.filter(
           (r) =>
             r.sap_asset_no.toLowerCase().includes(q) ||
-            r.name.toLowerCase().includes(q)
+            r.name.toLowerCase().includes(q) ||
+            (r.location_name || "").toLowerCase().includes(q)
         );
       }
       return {
@@ -119,7 +120,8 @@ export function buildStandardReport(
         rows = rows.filter(
           (r) =>
             r.equipment_no.toLowerCase().includes(q) ||
-            r.name.toLowerCase().includes(q)
+            r.name.toLowerCase().includes(q) ||
+            (r.location_name || "").toLowerCase().includes(q)
         );
       }
       return {

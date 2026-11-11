@@ -6,17 +6,22 @@ import { AppSettingsConfig } from "@/lib/types/domain";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<AppSettingsConfig | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/v1/admin/settings")
       .then((r) => r.json())
-      .then((res) => setSettings(res.data));
+      .then((res) => { if (!res.data) throw new Error(); setSettings(res.data); })
+      .catch(() => setError("Pengaturan gagal dimuat. Silakan muat ulang halaman."));
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!settings) return;
+    if (!settings || saving) return;
+    setSaving(true); setError("");
+    try {
     setSaved(false);
     const res = await fetch("/api/v1/admin/settings", {
       method: "PATCH",
@@ -24,11 +29,16 @@ export default function AdminSettingsPage() {
       body: JSON.stringify(settings),
     });
     const json = await res.json();
+    if (!res.ok) throw new Error();
     if (json.data) {
       setSettings(json.data);
       setSaved(true);
     }
+    } catch { setError("Pengaturan gagal disimpan. Silakan coba kembali."); }
+    finally { setSaving(false); }
   };
+
+  if (!settings && error) return <div role="alert">{error}</div>;
 
   if (!settings) {
     return <div className="text-sm text-[#547792]">Memuat pengaturan sistem...</div>;
@@ -41,11 +51,9 @@ export default function AdminSettingsPage() {
           <Settings className="w-6 h-6 text-[#547792]" />
           <span>Pengaturan Tata Kelola Sistem</span>
         </h1>
-        <p className="text-sm text-[#547792] mt-0.5">
-          Konfigurasi parameter operasional hierarki, normalisasi kode, batas import massal, dan kebijakan visibilitas data.
-        </p>
       </div>
 
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       {saved && (
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2 font-semibold">
           <CheckCircle2 className="w-4 h-4" />
@@ -220,6 +228,7 @@ export default function AdminSettingsPage() {
         <div className="flex justify-end">
           <button
             type="submit"
+            disabled={saving}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white font-bold shadow-sm transition"
           >
             <Save className="w-4 h-4 text-[#FAB95B]" />

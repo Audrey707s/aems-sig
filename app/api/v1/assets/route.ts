@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     let items = getEnrichedAssets(false, profile.role).map((a) => {
       const totalEqCount = activeEquipment.filter((e) => e.root_asset_id === a.id).length;
       const directEqCount = activeEquipment.filter(
-        (e) => e.active_parent_kind === "ASSET" && e.active_parent_id === a.id
+        (e) => state.equipment_active_parent.some(p => p.equipment_id === e.id && p.parent_kind === "ASSET" && p.parent_id === a.id)
       ).length;
       return {
         ...a,
@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
         (a) =>
           a.sap_asset_no.toLowerCase().includes(q) ||
           a.name.toLowerCase().includes(q) ||
+          (a.category_name || "").toLowerCase().includes(q) ||
+          (a.location_name || "").toLowerCase().includes(q) ||
           (a.cost_center && a.cost_center.toLowerCase().includes(q)) ||
           (a.serial_no && a.serial_no.toLowerCase().includes(q))
       );

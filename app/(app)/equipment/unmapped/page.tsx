@@ -17,26 +17,26 @@ interface UnmappedItem {
 
 export default function UnmappedEquipmentPage() {
   const [items, setItems] = useState<UnmappedItem[]>([]);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/v1/equipment?unmapped_only=true")
-      .then((r) => r.json())
+      .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error?.message || "Data gagal dimuat."); return body; })
       .then((res) => setItems(res.data || []))
+      .catch(() => setError("Data gagal dimuat. Silakan muat ulang halaman."))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="space-y-6">
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1A3263]">
             <Unlink className="w-6 h-6 text-[#547792]" />
             <span>Unmapped Equipment</span>
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Daftar equipment aktif yang berdiri mandiri dan belum dihubungkan ke aset maupun equipment induk.
-          </p>
         </div>
 
         <Link
@@ -48,7 +48,7 @@ export default function UnmappedEquipmentPage() {
         </Link>
       </div>
 
-      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
+      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-x-auto shadow-sm">
         <table className="w-full text-left text-xs">
           <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
             <tr>

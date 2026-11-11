@@ -17,6 +17,7 @@ import {
 } from "@/lib/types/domain";
 
 export default function ImportsPage() {
+  const demoControlsEnabled = process.env.NEXT_PUBLIC_AEMS_DEMO_MODE === "true";
   const [importType, setImportType] = useState<ImportType>("ASSET_MASTER");
   const [commitMode, setCommitMode] = useState<CommitMode>("PARTIAL");
   const [defaultDuplicateAction, setDefaultDuplicateAction] =
@@ -31,9 +32,12 @@ export default function ImportsPage() {
   const [history, setHistory] = useState<ImportBatchRecord[]>([]);
 
   const loadHistory = useCallback(async () => {
-    const res = await fetch("/api/v1/imports");
-    const json = await res.json();
-    setHistory(json.data || []);
+    try {
+      const res = await fetch("/api/v1/imports");
+      const json = await res.json();
+      if (!res.ok) throw new Error();
+      setHistory(json.data || []);
+    } catch { setErrorMsg("Riwayat import gagal dimuat. Silakan coba kembali."); }
   }, []);
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function ImportsPage() {
         fd.append("default_duplicate_action", defaultDuplicateAction);
         res = await fetch("/api/v1/imports", { method: "POST", body: fd });
       } else {
-        setErrorMsg("Silakan pilih berkas .xlsx atau gunakan tombol Muat Data Contoh di bawah.");
+        setErrorMsg("Silakan pilih berkas Excel (.xlsx).");
         setUploading(false);
         return;
       }
@@ -67,7 +71,7 @@ export default function ImportsPage() {
       setActiveBatch(json.data);
       setRowDecisions({});
       loadHistory();
-    } finally {
+    } catch { setErrorMsg("Pratinjau gagal dimuat. Periksa koneksi dan coba kembali."); } finally {
       setUploading(false);
     }
   };
@@ -155,7 +159,7 @@ export default function ImportsPage() {
       setActiveBatch(json.data);
       setRowDecisions({});
       loadHistory();
-    } finally {
+    } catch { setErrorMsg("Pratinjau gagal dimuat. Periksa koneksi dan coba kembali."); } finally {
       setUploading(false);
     }
   };
@@ -185,7 +189,7 @@ export default function ImportsPage() {
       }
       setActiveBatch(json.data);
       loadHistory();
-    } finally {
+    } catch { setErrorMsg("Import gagal diproses. Periksa koneksi dan status batch sebelum mencoba kembali."); } finally {
       setCommitting(false);
     }
   };
@@ -197,9 +201,6 @@ export default function ImportsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Import Data Massal Excel (.xlsx)
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Unggah, tinjau validasi data, kelola penanganan baris duplikat, dan proses penyimpanan ke sistem.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -281,7 +282,7 @@ export default function ImportsPage() {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
+            {demoControlsEnabled && <button
               type="button"
               onClick={handleQuickDemoSample}
               disabled={uploading}
@@ -289,7 +290,7 @@ export default function ImportsPage() {
             >
               <Play className="w-3.5 h-3.5 text-[#547792]" />
               <span>Muat Data Contoh</span>
-            </button>
+            </button>}
             <button
               type="submit"
               disabled={uploading}

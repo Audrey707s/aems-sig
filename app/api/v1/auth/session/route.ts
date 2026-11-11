@@ -51,33 +51,22 @@ export async function POST(req: NextRequest) {
         await supabase?.auth.signOut();
       }
       const res = NextResponse.json({ ok: true });
-      res.cookies.delete(AEMS_SESSION_COOKIE);
+      res.cookies.set(AEMS_SESSION_COOKIE, "UNAUTHENTICATED", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 12 });
       return res;
     }
 
-    // If Supabase Auth mode is enabled and email + password are submitted, authenticate via Supabase Auth
-    if (
-      isSupabaseConfigured() &&
-      process.env.AEMS_STORAGE_MODE === "supabase" &&
-      body.email &&
-      body.password &&
-      !String(body.password).includes("••••")
-    ) {
-      const supabase = await createSupabaseServerClient();
-      if (supabase) {
-        const { data: authData, error: authErr } =
-          await supabase.auth.signInWithPassword({
-            email: String(body.email).trim(),
-            password: String(body.password),
-          });
-        if (authErr || !authData.user) {
-          throw new AemsError(
-            "UNAUTHORIZED",
-            authErr?.message || "Email atau kata sandi tidak valid.",
-            401
-          );
-        }
+    if (process.env.AEMS_STORAGE_MODE === "supabase") {
+      if (!isSupabaseConfigured() || !body.email || !body.password) {
+        throw new AemsError("UNAUTHORIZED", "Email dan kata sandi wajib diisi.", 401);
       }
+      const supabase = await createSupabaseServerClient();
+      if (!supabase) throw new AemsError("UNAUTHORIZED", "Layanan login tidak tersedia.", 401);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: String(body.email).trim(), password: String(body.password),
+      });
+      if (error || !data.user) throw new AemsError("UNAUTHORIZED", "Email atau kata sandi tidak valid.", 401);
+      const profile = await getCurrentProfile();
+      return NextResponse.json({ data: { user: profile }, profile });
     }
 
     const state = getAemsState();

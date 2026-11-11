@@ -7,27 +7,27 @@ import { AuditLogRecord } from "@/lib/types/domain";
 export default function AuditTrailPage() {
   const [logs, setLogs] = useState<AuditLogRecord[]>([]);
   const [entityType, setEntityType] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/v1/audit-logs${entityType ? `?entity_type=${entityType}` : ""}`)
-      .then((r) => r.json())
+      .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error?.message || "Data gagal dimuat."); return body; })
       .then((res) => setLogs(res.data || []))
+      .catch(() => setError("Data gagal dimuat. Silakan muat ulang halaman."))
       .finally(() => setLoading(false));
   }, [entityType]);
 
   return (
     <div className="space-y-6">
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1A3263]">
             <ClipboardList className="w-6 h-6 text-[#547792]" />
             <span>Audit Trail Terpusat</span>
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Rekaman aktivitas sistem mencakup pengguna, waktu, tindakan, serta nilai sebelum dan sesudah perubahan.
-          </p>
         </div>
 
         <select
@@ -46,7 +46,7 @@ export default function AuditTrailPage() {
         </select>
       </div>
 
-      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
+      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-x-auto shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
@@ -84,7 +84,7 @@ export default function AuditTrailPage() {
                     </td>
                     <td className="py-3 px-4 font-bold text-[#547792]">{log.action}</td>
                     <td className="py-3 px-4 font-mono text-[11px] text-[#547792] max-w-md truncate">
-                      {log.new_values ? JSON.stringify(log.new_values) : "-"}
+                      {log.new_values ? <details className="whitespace-normal min-w-40"><summary className="cursor-pointer font-sans">Lihat perubahan</summary><dl className="mt-2 space-y-1 font-sans">{Object.entries(log.new_values).filter(([key]) => !["id", "password", "token", "row_version", "request_id"].includes(key)).map(([key, value]) => <div key={key}><dt className="font-semibold">{key.replaceAll("_", " ")}</dt><dd>{value === null ? "Kosong" : typeof value === "object" ? "Data terstruktur diperbarui" : String(value)}</dd></div>)}</dl></details> : "-"}
                     </td>
                   </tr>
                 ))

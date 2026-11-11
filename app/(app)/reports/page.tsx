@@ -18,22 +18,29 @@ const REPORT_Catalog: Array<{ name: ReportName; label: string; desc: string }> =
 
 function ReportsContent() {
   const searchParams = useSearchParams();
-  const initialReport = (searchParams.get("report") as ReportName) || "all-assets";
+  const reportParam = searchParams.get("report");
+  const initialReport = REPORT_Catalog.find(r => r.name === reportParam)?.name || "all-assets";
 
   const [selectedReport, setSelectedReport] = useState<ReportName>(initialReport);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(searchParams.get("q") || "");
+  const [error, setError] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const loadReport = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       const res = await fetch(`/api/v1/reports/${selectedReport}?${params.toString()}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message || "Laporan gagal dimuat.");
       setReportData(json.data);
+    } catch {
+      setReportData(null);
+      setError("Laporan gagal dimuat. Silakan coba kembali.");
     } finally {
       setLoading(false);
     }
@@ -50,9 +57,6 @@ function ReportsContent() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Pusat Laporan &amp; Ekspor
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Tinjau laporan operasional di layar dan unduh dokumen dalam format Excel (.xlsx) atau PDF.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -77,6 +81,7 @@ function ReportsContent() {
         </div>
       </div>
 
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error} <button onClick={() => void loadReport()} className="ml-3 underline">Coba kembali</button></div>}
       {/* Report Selector Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {REPORT_Catalog.map((item) => {
