@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     if (body.action === "RESET_DEMO") {
+      if (process.env.NEXT_PUBLIC_AEMS_DEMO_MODE !== "true" || process.env.AEMS_STORAGE_MODE === "supabase") {
+        throw new AemsError("FORBIDDEN", "Reset demo dinonaktifkan.", 403);
+      }
       const freshState = resetAemsState();
       const adminProfile = freshState.profiles[2];
       const res = NextResponse.json({
