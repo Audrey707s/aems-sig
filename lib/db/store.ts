@@ -25,7 +25,6 @@ import {
   ImportType,
   MappingChangeItem,
   MappingChangeRequest,
-  MappingHistoryRecord,
   ParentKind,
   Profile,
   ReconciliationFinding,
