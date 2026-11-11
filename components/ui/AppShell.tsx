@@ -93,11 +93,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/v1/auth/session", { cache: "no-store" });
       const json = await res.json();
-      if (json.data?.user) {
-        setUser(json.data.user);
-      }
+      setUser(json.data?.user ?? null);
     } catch {
-      // ignore
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -148,6 +146,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (action: PermissionAction) => hasPermission(user, action),
     [user]
   );
+
+  const visibleNavGroups = loading || !user ? [] : NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.permission || can(item.permission)),
+  })).filter(group => group.items.length > 0);
 
   return (
     <AuthContext.Provider value={{ user, loading, switchRole, refreshUser: fetchUser, can }}>
@@ -287,9 +290,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Accessible mobile navigation: sidebar is hidden below lg breakpoint. */}
         <nav aria-label="Navigasi utama mobile" className="lg:hidden flex gap-1.5 overflow-x-auto border-b border-[#E8E2DB] bg-white px-3 py-2">
-          {MAIN_NAV.filter((item) => !item.permission || can(item.permission)).map((item) => {
+          {loading ? <span role="status" className="px-3 py-2 text-xs text-[#547792]">Memuat navigasi...</span> : visibleNavGroups.flatMap(group => group.items).map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+            const [path, query] = item.href.split("?");
+            const active = query ? pathname === path && query.split("&").every(part => {
+              const [key, value] = part.split("=");
+              return searchParams.get(key) === value;
+            }) : (pathname === path || (path !== "/dashboard" && pathname.startsWith(path + "/"))) && !(path === "/mapping" && searchParams.get("tab") === "inbox");
             return (
               <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}
                 className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${active ? "bg-[#1A3263] text-white" : "text-[#1A3263] hover:bg-[#F6F4F0]"}`}>
@@ -320,9 +327,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <nav aria-label="Navigasi utama" className="space-y-5">
-                {NAV_GROUPS.map(group => {
-                  const items = group.items.filter(item => !item.permission || can(item.permission));
-                  if (!items.length) return null;
+                {loading ? <div role="status" className="px-3 py-3 text-sm text-[#547792]">Memuat navigasi...</div> : visibleNavGroups.map(group => {
+                  const items = group.items;
                   return <div key={group.title}>
                     <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-[#547792]">{group.title}</div>
                     <div className="space-y-1">{items.map(item => {
