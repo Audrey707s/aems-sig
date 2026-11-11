@@ -33,10 +33,15 @@ export default function EquipmentDetailPage() {
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
+    setDetail(null);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/v1/equipment/${params.id}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message || "Detail equipment gagal dimuat.");
       if (json.data) setDetail(json.data);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Periksa koneksi dan coba kembali.");
     } finally {
       setLoading(false);
     }
@@ -101,6 +106,13 @@ export default function EquipmentDetailPage() {
     }
     router.push("/equipment");
   };
+
+  if (!loading && !detail) return <div role="alert" className="space-y-4 rounded-xl border bg-white p-6">
+    <h1 className="text-xl font-bold">Detail tidak tersedia</h1>
+    <p>{errorMsg || "Data tidak ditemukan."}</p>
+    <button type="button" onClick={() => void loadDetail()} className="rounded-lg border px-4 py-2">Coba kembali</button>
+    <Link href="/equipment" className="ml-3 underline">Kembali ke daftar</Link>
+  </div>;
 
   if (loading || !detail) {
     return <div className="text-sm text-[#547792]">Memuat detail equipment...</div>;

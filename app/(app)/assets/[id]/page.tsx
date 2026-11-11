@@ -26,6 +26,8 @@ export default function AssetDetailPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setDetail(null);
+    setErrorMsg(null);
     try {
       const [resAsset, resTree] = await Promise.all([
         fetch(`/api/v1/assets/${params.id}`),
@@ -33,6 +35,7 @@ export default function AssetDetailPage() {
       ]);
       const jsonAsset = await resAsset.json();
       const jsonTree = await resTree.json();
+      if (!resAsset.ok || !resTree.ok) throw new Error(jsonAsset.error?.message || jsonTree.error?.message || "Detail aset gagal dimuat.");
       if (jsonAsset.data) {
         setDetail(jsonAsset.data);
         setEditName(jsonAsset.data.asset.name);
@@ -41,6 +44,8 @@ export default function AssetDetailPage() {
       if (jsonTree.data) {
         setTree(jsonTree.data);
       }
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Periksa koneksi dan coba kembali.");
     } finally {
       setLoading(false);
     }
@@ -86,6 +91,13 @@ export default function AssetDetailPage() {
     }
     router.push("/assets");
   };
+
+  if (!loading && !detail) return <div role="alert" className="space-y-4 rounded-xl border bg-white p-6">
+    <h1 className="text-xl font-bold">Detail tidak tersedia</h1>
+    <p>{errorMsg || "Data tidak ditemukan."}</p>
+    <button type="button" onClick={() => void loadData()} className="rounded-lg border px-4 py-2">Coba kembali</button>
+    <Link href="/assets" className="ml-3 underline">Kembali ke daftar</Link>
+  </div>;
 
   if (loading || !detail) {
     return <div className="text-sm text-[#547792]">Memuat detail aset...</div>;
@@ -189,7 +201,7 @@ export default function AssetDetailPage() {
             type="submit"
             className="px-4 py-2 rounded-lg bg-[#1A3263] text-white font-bold"
           >
-            Simpan Perubahan (v{asset.row_version})
+            Simpan Perubahan
           </button>
         </form>
       )}

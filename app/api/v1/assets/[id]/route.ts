@@ -30,8 +30,7 @@ export async function GET(
     const directEquipment = state.equipment.filter(
       (e) =>
         e.deleted_at === null &&
-        e.active_parent_kind === "ASSET" &&
-        e.active_parent_id === asset.id
+        state.equipment_active_parent.some(p => p.equipment_id === e.id && p.parent_kind === "ASSET" && p.parent_id === asset.id)
     );
     const specItems = state.equipment_spec_items.filter(
       (s) => s.asset_id === asset.id

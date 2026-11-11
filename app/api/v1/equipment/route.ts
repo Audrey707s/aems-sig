@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     let items = getEnrichedEquipment(false).map((e) => ({
       ...e,
-      is_unmapped: e.root_asset_id === null && e.active_parent_id === null,
+      is_unmapped: e.root_asset_id === null,
       parent_kind: e.active_parent_kind,
       parent_label: e.active_parent_no
         ? `${e.active_parent_kind}: ${e.active_parent_no}`
@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
         (e) =>
           e.equipment_no.toLowerCase().includes(q) ||
           e.name.toLowerCase().includes(q) ||
+          (e.specification || "").toLowerCase().includes(q) ||
           (e.serial_no && e.serial_no.toLowerCase().includes(q)) ||
           (e.root_asset_no && e.root_asset_no.toLowerCase().includes(q))
       );

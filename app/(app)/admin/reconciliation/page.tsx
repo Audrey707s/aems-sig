@@ -7,6 +7,8 @@ import { useAuth } from "@/components/ui/AppShell";
 
 export default function ReconciliationPage() {
   const { can } = useAuth();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [findings, setFindings] = useState<ReconciliationFinding[]>([]);
   const [loading, setLoading] = useState(true);
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
@@ -16,8 +18,9 @@ export default function ReconciliationPage() {
     try {
       const res = await fetch("/api/v1/admin/reconciliation/scan");
       const json = await res.json();
+      if (!res.ok) throw new Error();
       setFindings(json.data || []);
-    } finally {
+    } catch { setError("Hasil rekonsiliasi gagal dimuat. Silakan coba kembali."); } finally {
       setLoading(false);
     }
   }, []);
@@ -27,19 +30,25 @@ export default function ReconciliationPage() {
   }, [loadFindings]);
 
   const handleScan = async () => {
-    setLoading(true);
+    setLoading(true); setError("");
+    try {
     const res = await fetch("/api/v1/admin/reconciliation/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "SCAN" }),
     });
     const json = await res.json();
+    if (!res.ok) throw new Error();
     setFindings(json.data || []);
-    setLoading(false);
+    } catch { setError("Pemindaian gagal. Silakan coba kembali."); }
+    finally { setLoading(false); }
   };
 
   const handleResolve = async (findingId: string, status: ReconciliationStatus) => {
-    await fetch(`/api/v1/admin/findings/${findingId}`, {
+    if (busy) return;
+    setBusy(true); setError("");
+    try {
+    const response = await fetch(`/api/v1/admin/findings/${findingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -47,7 +56,10 @@ export default function ReconciliationPage() {
         resolution_note: noteMap[findingId] || `Ditandai ${status}`,
       }),
     });
-    loadFindings();
+    if (!response.ok) throw new Error();
+    await loadFindings();
+    } catch { setError("Status temuan gagal diperbarui. Silakan coba kembali."); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -58,9 +70,6 @@ export default function ReconciliationPage() {
             <ShieldAlert className="w-6 h-6 text-[#547792]" />
             <span>Rekonsiliasi &amp; Kualitas Data</span>
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Pemindaian otomatis atas equipment tanpa aset induk, keutuhan silsilah, dan konsistensi status siklus hidup.
-          </p>
         </div>
 
         <button
@@ -74,6 +83,7 @@ export default function ReconciliationPage() {
         </button>
       </div>
 
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       <div className="space-y-3">
         {findings.map((f) => (
           <div
@@ -124,6 +134,7 @@ export default function ReconciliationPage() {
                 />
                 <button
                   type="button"
+                  disabled={busy}
                   onClick={() => handleResolve(f.id, "RESOLVED")}
                   className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
                 >

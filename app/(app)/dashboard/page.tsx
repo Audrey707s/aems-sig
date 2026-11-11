@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/ui/AppShell";
 import {
   Box,
   Cpu,
@@ -38,18 +38,24 @@ interface DashboardSummary {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const { can } = useAuth();
+  const [error, setError] = useState("");
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/v1/dashboard/summary${statusFilter ? `?status=${statusFilter}` : ""}`)
-      .then((r) => r.json())
-      .then((res) => setData(res.data))
-      .finally(() => setLoading(false));
+    const ctrl = new AbortController();
+    setLoading(true); setError("");
+    fetch(`/api/v1/dashboard/summary${statusFilter ? `?status=${statusFilter}` : ""}`, { signal: ctrl.signal })
+      .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error?.message || "Dashboard gagal dimuat."); return body; })
+      .then(res => setData(res.data))
+      .catch(e => { if (e.name !== "AbortError") setError("Dashboard gagal dimuat. Silakan muat ulang halaman."); })
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
+    return () => ctrl.abort();
   }, [statusFilter]);
+
+  if (error) return <div role="alert" className="rounded-xl border bg-white p-6">{error} <button onClick={() => window.location.reload()} className="ml-3 underline">Coba kembali</button></div>;
 
   if (loading || !data) {
     return (
@@ -74,9 +80,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Dashboard Eksekutif
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Ringkasan operasional aset tetap, inventaris equipment, dan status integrasi hierarki.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -95,7 +98,7 @@ export default function DashboardPage() {
       {/* 4 Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
-          href="/assets"
+          href={statusFilter ? `/assets?status=${statusFilter}` : "/assets"}
           className="group p-5 rounded-xl bg-white border border-[#E8E2DB] hover:border-[#1A3263] shadow-sm transition flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -115,7 +118,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link
-          href="/equipment"
+          href={statusFilter ? `/equipment?status=${statusFilter}` : "/equipment"}
           className="group p-5 rounded-xl bg-white border border-[#E8E2DB] hover:border-[#547792] shadow-sm transition flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -157,7 +160,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link
-          href="/mapping?tab=inbox"
+          href={can("mapping:approve") ? "/mapping?tab=inbox" : "/mapping?tab=history"}
           className="group p-5 rounded-xl bg-[#1A3263] text-white border border-[#1A3263] shadow-sm transition flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -189,9 +192,9 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-3">
             {data.assets_by_category.map((item) => (
-              <div
+              <Link
                 key={item.category}
-                onClick={() => router.push(`/assets?q=${encodeURIComponent(item.category)}`)}
+                href={`/assets?q=${encodeURIComponent(item.category)}${statusFilter ? `&status=${statusFilter}` : ""}`}
                 className="cursor-pointer group"
               >
                 <div className="flex justify-between text-xs mb-1">
@@ -206,7 +209,7 @@ export default function DashboardPage() {
                     style={{ width: `${Math.max((item.count / maxCatCount) * 100, 12)}%` }}
                   />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -219,9 +222,9 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-3">
             {data.equipment_by_condition.map((c) => (
-              <div
+              <Link
                 key={c.condition}
-                onClick={() => router.push(`/equipment?condition=${encodeURIComponent(c.condition)}`)}
+                href={`/equipment?condition=${encodeURIComponent(c.condition)}`}
                 className="flex items-center justify-between p-3 rounded-lg bg-[#F6F4F0] hover:bg-[#E8E2DB]/60 border border-[#E8E2DB] cursor-pointer transition"
               >
                 <div className="flex items-center gap-2.5">
@@ -239,7 +242,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <span className="text-sm font-bold text-[#1A3263]">{c.count} unit</span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -252,9 +255,9 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2.5">
             {data.assets_by_location.map((loc) => (
-              <div
+              <Link
                 key={loc.location}
-                onClick={() => router.push(`/reports?report=EQUIPMENT_BY_LOCATION`)}
+                href={`/reports?report=all-equipment&q=${encodeURIComponent(loc.location)}`}
                 className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[#F6F4F0] cursor-pointer text-xs border-b border-[#E8E2DB]/60 last:border-0"
               >
                 <span className="font-semibold text-[#1A3263]">{loc.location}</span>
@@ -266,7 +269,7 @@ export default function DashboardPage() {
                     {loc.equipment} Eqp
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -279,9 +282,9 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-[#1A3263]">
               Aktivitas Terbaru
             </h2>
-            <Link href="/admin/audit" className="text-xs text-[#547792] hover:text-[#1A3263] font-bold">
+            {can("audit:view_full") && <Link href="/admin/audit" className="text-xs text-[#547792] hover:text-[#1A3263] font-bold">
               Lihat Audit Trail →
-            </Link>
+            </Link>}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -348,7 +351,7 @@ export default function DashboardPage() {
             <ArrowUpRight className="w-4 h-4 text-[#547792]" />
           </Link>
 
-          <Link
+          {can("reconciliation:read") && <Link
             href="/admin/reconciliation"
             className="flex items-center justify-between p-3.5 rounded-xl border border-[#E8E2DB] bg-[#F6F4F0]/60 hover:border-[#FAB95B] hover:bg-[#FEF6E7]/60 transition"
           >
@@ -364,7 +367,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <ArrowUpRight className="w-4 h-4 text-[#547792]" />
-          </Link>
+          </Link>}
         </div>
       </div>
     </div>

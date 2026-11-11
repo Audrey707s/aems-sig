@@ -25,7 +25,7 @@ function UniversalSearchResults() {
     return () => ctrl.abort();
   }, [q]);
   return <div className="space-y-5">
-    <div><h1 className="text-2xl font-bold text-[#1A3263]">Pencarian Universal</h1><p className="text-sm text-[#547792]">Temukan aset SAP, equipment, komponen, dan relasi hierarkinya dalam satu pencarian.</p></div>
+    <div><h1 className="text-2xl font-bold text-[#1A3263]">Pencarian Universal</h1></div>
     <form action="/search" className="flex gap-2 rounded-xl border bg-white p-3"><Search className="mt-2 h-5 w-5 text-[#547792]" /><input name="q" defaultValue={q} key={q} autoFocus placeholder="Nomor aset, equipment, serial, atau nama..." className="min-w-0 flex-1 px-2 outline-none" /><button className="rounded-lg bg-[#1A3263] px-4 py-2 text-sm font-semibold text-white">Cari</button></form>
     {loading && <p role="status">Mencari data...</p>}
     {error && <p role="alert" className="text-red-700">{error}</p>}

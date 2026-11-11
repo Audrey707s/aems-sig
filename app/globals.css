@@ -46,3 +46,28 @@ code, pre, .font-mono {
 ::-webkit-scrollbar-thumb:hover {
   background: #1A3263;
 }
+
+/* Consistent interaction and focus treatment across every module. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--brand-amber);
+  outline-offset: 3px;
+}
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+:where(button, a, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+main :where(input, select, textarea) { max-width: 100%; }
+main :where(th, td) { vertical-align: top; }
+main thead th { white-space: nowrap; }
+main tbody tr { transition: background-color 120ms ease; }
+.page-content { animation: page-enter 180ms ease-out; }
+@keyframes page-enter {
+  from { opacity: .65; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

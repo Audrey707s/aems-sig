@@ -4,7 +4,7 @@
 
 import { cookies, headers } from "next/headers";
 import { getAemsState } from "@/lib/db/store";
-import { AppRole, Profile } from "@/lib/types/domain";
+import { Profile } from "@/lib/types/domain";
 import { AemsError } from "@/lib/utils/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -29,7 +29,7 @@ export async function getCurrentProfile(): Promise<Profile> {
   try {
     const hdrs = await headers();
     const headerUserId = hdrs.get("x-aems-user-id");
-    if (headerUserId) {
+    if (process.env.NODE_ENV === "test" && headerUserId) {
       userId = headerUserId;
     }
   } catch {
@@ -37,7 +37,8 @@ export async function getCurrentProfile(): Promise<Profile> {
   }
 
   // If no test header is present and Supabase Auth mode is enabled, verify JWT via getUser()
-  if (!userId && isSupabaseConfigured() && process.env.AEMS_STORAGE_MODE === "supabase") {
+  if (process.env.AEMS_STORAGE_MODE === "supabase") {
+    if (!isSupabaseConfigured()) throw new AemsError("UNAUTHORIZED", "Layanan login belum dikonfigurasi.", 401);
     try {
       const supabase = await createSupabaseServerClient();
       if (supabase) {
@@ -68,7 +69,7 @@ export async function getCurrentProfile(): Promise<Profile> {
               403
             );
           }
-          if (!dbProfile.role) {
+          if (!dbProfile.role || !["ADMIN", "ACCOUNTING", "MAINTENANCE"].includes(dbProfile.role)) {
             throw new AemsError(
               "FORBIDDEN",
               "Akun Anda belum memiliki role yang ditetapkan oleh Administrator.",
@@ -78,30 +79,11 @@ export async function getCurrentProfile(): Promise<Profile> {
           return dbProfile as Profile;
         }
 
-        // Fallback to app_metadata.role (never user_metadata)
-        const appRole = (user.app_metadata?.role as AppRole | undefined) ?? null;
-        if (!appRole) {
-          throw new AemsError(
-            "FORBIDDEN",
-            "Akun Anda belum memiliki role yang ditetapkan oleh Administrator.",
-            403
-          );
-        }
-
-        return {
-          id: user.id,
-          email: user.email || "",
-          full_name: user.email?.split("@")[0] || "Pengguna",
-          role: appRole,
-          is_active: true,
-          department: null,
-          last_login_at: user.last_sign_in_at || new Date().toISOString(),
-          created_at: user.created_at,
-          updated_at: new Date().toISOString(),
-        };
+        throw new AemsError("FORBIDDEN", "Profil akun belum tersedia. Hubungi Administrator.", 403);
       }
     } catch (err) {
       if (err instanceof AemsError) throw err;
+      throw new AemsError("UNAUTHORIZED", "Sesi tidak dapat diverifikasi. Silakan login kembali.", 401);
     }
   }
 

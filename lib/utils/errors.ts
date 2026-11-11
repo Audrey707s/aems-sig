@@ -57,7 +57,7 @@ export function formatErrorResponse(err: unknown, requestId?: string) {
     };
   }
 
-  const msg = err instanceof Error ? err.message : "Terjadi kesalahan internal pada server.";
+  const msg = "Terjadi kesalahan pada server. Silakan coba kembali.";
   return {
     status: 500,
     body: {

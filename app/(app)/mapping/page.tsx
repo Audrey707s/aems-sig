@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   GitBranch,
   CheckCircle2,
@@ -17,13 +17,18 @@ import { MappingChangeRequest, MappingHistoryRecord, MappingRequestType } from "
 function MappingContent() {
   const { user, can } = useAuth();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "inbox" ? "inbox" : "create";
+  const router = useRouter();
+  const initialTab = searchParams.get("tab") === "inbox" ? "inbox" : searchParams.get("tab") === "history" ? "history" : "create";
   const preselectedEquipmentId = searchParams.get("equipmentId") || "";
   const preselectedAssetId = searchParams.get("assetId") || "";
 
-  const [activeTab, setActiveTab] = useState<"create" | "inbox" | "history">(
-    initialTab as "create" | "inbox" | "history"
-  );
+  const activeTab = initialTab;
+  const setActiveTab = (next: "create" | "inbox" | "history") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "create") params.delete("tab"); else params.set("tab", next);
+    router.push(`/mapping${params.size ? `?${params}` : ""}`, { scroll: false });
+  };
+  const [busy, setBusy] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [assets, setAssets] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,16 +61,19 @@ function MappingContent() {
     setAssets(jsonA.data || []);
     setEquipmentList(jsonE.data || []);
     setRequests(Array.isArray(jsonR.data) ? jsonR.data : jsonR.data?.requests || []);
-    setHistory(Array.isArray(jsonH.data) ? jsonH.data : jsonR.data?.history || []);
+    setHistory(Array.isArray(jsonH.data) ? jsonH.data : jsonH.data?.history || []);
   }, []);
 
   useEffect(() => {
-    loadAll();
+    loadAll().catch(() => setFeedback({ type: "error", text: "Data mapping gagal dimuat. Silakan muat ulang halaman." }));
   }, [loadAll]);
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
+    setBusy(true);
     setFeedback(null);
+    try {
     const effectiveParentKind = requestType === "UNLINK" ? null : toParentKind === "UNMAPPED" ? null : toParentKind;
     const effectiveParentId = requestType === "UNLINK" ? null : toParentId || null;
 
@@ -99,14 +107,24 @@ function MappingContent() {
     setReason("");
     await loadAll();
     setActiveTab("inbox");
+    } catch {
+      setFeedback({ type: "error", text: "Pengajuan gagal dikirim. Periksa koneksi dan coba kembali." });
+    } finally { setBusy(false); }
   };
 
   const handleReview = async (reqId: string, action: "APPROVE" | "REJECT") => {
+    if (busy) return;
+    if (action === "REJECT" && !reviewNote.trim()) {
+      setFeedback({ type: "error", text: "Isi alasan penolakan terlebih dahulu." });
+      return;
+    }
+    setBusy(true);
     setFeedback(null);
+    try {
     const res = await fetch(`/api/v1/mapping/requests/${reqId}/${action.toLowerCase()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ review_note: reviewNote || `${action} oleh Admin` }),
+      body: JSON.stringify({ review_note: reviewNote.trim() || "Disetujui oleh Administrator" }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -122,6 +140,9 @@ function MappingContent() {
     });
     setReviewNote("");
     await loadAll();
+    } catch {
+      setFeedback({ type: "error", text: "Keputusan gagal dikirim. Periksa koneksi dan coba kembali." });
+    } finally { setBusy(false); }
   };
 
   const pendingCount = requests.filter((r) => r.status === "SUBMITTED").length;
@@ -133,9 +154,6 @@ function MappingContent() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Workspace Mapping &amp; Hierarki
           </h1>
-          <p className="text-sm text-[#547792] mt-0.5">
-            Kelola keterhubungan aset induk, struktur bertingkat equipment, serta persetujuan perubahan.
-          </p>
         </div>
 
         {/* Tab Selector */}
@@ -180,7 +198,7 @@ function MappingContent() {
       </div>
 
       {feedback && (
-        <div
+        <div role="status" aria-live="polite"
           className={`p-4 rounded-xl border text-xs flex items-center gap-2.5 ${
             feedback.type === "error"
               ? "bg-red-50 border-red-200 text-red-700"
@@ -215,7 +233,7 @@ function MappingContent() {
                       : "bg-[#F6F4F0] text-[#1A3263] border-[#E8E2DB] hover:bg-[#E8E2DB]/60"
                   }`}
                 >
-                  {t}
+                  {{ LINK: "Hubungkan", MOVE: "Pindahkan", UNLINK: "Lepaskan", BATCH: "Massal" }[t]}
                 </button>
               ))}
             </div>
@@ -276,7 +294,7 @@ function MappingContent() {
                             {a.sap_asset_no} — {a.name}
                           </option>
                         ))
-                      : equipmentList.map((eq) => (
+                      : equipmentList.filter(eq => eq.id !== selectedEquipmentId).map((eq) => (
                           <option key={eq.id} value={eq.id}>
                             {eq.equipment_no} — {eq.name} (Level {eq.depth})
                           </option>
@@ -303,6 +321,7 @@ function MappingContent() {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
+                disabled={busy}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white font-bold shadow-sm transition"
               >
                 <Send className="w-4 h-4 text-[#FAB95B]" />
@@ -422,6 +441,7 @@ function MappingContent() {
                           )}
                           <button
                             type="button"
+                            disabled={busy || req.requested_by === user?.id}
                             onClick={() => handleReview(req.id, "APPROVE")}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
                           >
@@ -430,6 +450,7 @@ function MappingContent() {
                           </button>
                           <button
                             type="button"
+                            disabled={busy || req.requested_by === user?.id}
                             onClick={() => handleReview(req.id, "REJECT")}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
                           >

@@ -20,7 +20,7 @@ export default function AdminUsersPage() {
         return;
       }
       setUsers(json.data || []);
-    } finally {
+    } catch { setErrorMsg("Daftar pengguna gagal dimuat. Silakan coba kembali."); } finally {
       setLoading(false);
     }
   }, []);
@@ -31,6 +31,7 @@ export default function AdminUsersPage() {
 
   const handleUpdateUser = async (id: string, role: AppRole, is_active: boolean) => {
     setErrorMsg(null);
+    try {
     const targetUser = users.find((u) => u.id === id);
     const res = await fetch(`/api/v1/admin/users`, {
       method: "POST",
@@ -49,7 +50,8 @@ export default function AdminUsersPage() {
       setErrorMsg(json.error?.message || "Gagal memperbarui pengguna.");
       return;
     }
-    loadUsers();
+    await loadUsers();
+    } catch { setErrorMsg("Perubahan pengguna gagal disimpan. Silakan coba kembali."); }
   };
 
   return (
@@ -59,9 +61,6 @@ export default function AdminUsersPage() {
           <Users className="w-6 h-6 text-[#547792]" />
           <span>Manajemen Pengguna &amp; Hak Akses</span>
         </h1>
-        <p className="text-sm text-[#547792] mt-0.5">
-          Kelola peran pengguna (Accounting, Maintenance, Administrator) serta status keaktifan akun.
-        </p>
       </div>
 
       {errorMsg && (

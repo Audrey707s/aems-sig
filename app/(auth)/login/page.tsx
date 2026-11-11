@@ -8,9 +8,11 @@ import { AppRole } from "@/lib/types/domain";
 
 export default function LoginPage() {
   const router = useRouter();
+  const demoControlsEnabled = process.env.NEXT_PUBLIC_AEMS_DEMO_MODE === "true";
+  const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("ADMIN");
-  const [email, setEmail] = useState("admin@aems.co.id");
-  const [password, setPassword] = useState("••••••••••••");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRolePreset = (role: AppRole) => {
@@ -23,14 +25,18 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
-      await fetch("/api/v1/auth/session", {
+      const response = await fetch("/api/v1/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: selectedRole }),
+        body: JSON.stringify(demoControlsEnabled ? { role: selectedRole } : { email, password }),
       });
+      const body = await response.json();
+      if (!response.ok) { setError(body.error?.message || "Login gagal. Silakan coba kembali."); return; }
       router.push("/dashboard");
-    } finally {
+      router.refresh();
+    } catch { setError("Tidak dapat terhubung. Periksa koneksi dan coba kembali."); } finally {
       setLoading(false);
     }
   };
@@ -62,8 +68,9 @@ export default function LoginPage() {
         </div>
 
         {/* Form Body */}
+        {error && <div role="alert" className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <form onSubmit={handleLogin} className="p-6 space-y-5">
-          <div>
+          {demoControlsEnabled && <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#547792] mb-2">
               Pilih Profil Akses
             </label>
@@ -89,7 +96,7 @@ export default function LoginPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div>
             <label className="block text-xs font-semibold text-[#1A3263] mb-1">
