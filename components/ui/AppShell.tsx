@@ -77,7 +77,7 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   ] },
 ];
 const MAIN_NAV = NAV_GROUPS.flatMap(group => group.items);
-const ADMIN_NAV: NavItem[] = [];
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
