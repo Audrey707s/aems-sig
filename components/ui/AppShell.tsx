@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -148,8 +149,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-3 group">
               <div className="bg-white rounded-lg px-2.5 py-1 shadow-sm flex items-center justify-center border border-[#E8E2DB] transition group-hover:scale-[1.02]">
-                <img
+                <Image
                   src="/logo-aems.png"
+                width={140}
+                height={40}
                   alt="AEMS Logo"
                   className="h-7 w-auto object-contain"
                 />
