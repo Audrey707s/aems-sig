@@ -405,7 +405,16 @@ function MappingContent() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white font-bold shadow-sm transition"
               >
                 <Send className="w-4 h-4 text-[#FAB95B]" />
-                <span>Kirim Pengajuan Mapping</span>
+                <span>
+                  {busy
+                    ? "Memproses…"
+                    : requestType === "LINK"
+                      ? "Hubungkan"
+                      : user?.role === "ADMIN" ||
+                          user?.account_level === "MANAGER"
+                        ? "Terapkan Perubahan"
+                        : "Kirim Pengajuan"}
+                </span>
               </button>
             </div>
           </form>
@@ -440,16 +449,20 @@ function MappingContent() {
       {/* TAB 2: INBOX APPROVAL */}
       {activeTab === "inbox" && (
         <div className="space-y-4">
-          {requests.filter((req) =>
-            req.items.some((item) => item.action_type !== "LINK"),
+          {requests.filter(
+            (req) =>
+              req.status === "SUBMITTED" ||
+              req.items.some((item) => item.action_type !== "LINK"),
           ).length === 0 ? (
             <div className="p-8 rounded-xl bg-white border border-[#E8E2DB] text-center text-xs text-[#547792]">
               Belum ada pengajuan perubahan mapping.
             </div>
           ) : (
             requests
-              .filter((req) =>
-                req.items.some((item) => item.action_type !== "LINK"),
+              .filter(
+                (req) =>
+                  req.status === "SUBMITTED" ||
+                  req.items.some((item) => item.action_type !== "LINK"),
               )
               .map((req) => (
                 <div
