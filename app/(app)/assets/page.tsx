@@ -207,7 +207,7 @@ function AssetsContent() {
                     <td className="py-3 px-4 text-[#547792]">{asset.location_name}</td>
                     <td className="py-3 px-4 font-mono font-semibold text-[#1A3263]">
                       {asset.acquisition_value !== null
-                        ? `Rp ${Number(asset.acquisition_value).toLocaleString("id-ID")}`
+                        ? `${asset.currency || "IDR"} ${Number(asset.acquisition_value).toLocaleString("id-ID")}`
                         : "Terbatas"}
                     </td>
                     <td className="py-3 px-4">

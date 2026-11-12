@@ -176,7 +176,7 @@ export default function AssetDetailPage() {
             <span className="text-[#547792]">Nilai Perolehan:</span>
             <span className="font-mono font-bold text-[#1A3263]">
               {asset.acquisition_value !== null
-                ? `Rp ${Number(asset.acquisition_value).toLocaleString("id-ID")}`
+                ? `${asset.currency || "IDR"} ${Number(asset.acquisition_value).toLocaleString("id-ID")}`
                 : "Terbatas"}
             </span>
             <span className="text-[#547792]">Pabrikan / Model:</span>

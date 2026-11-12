@@ -6,7 +6,7 @@ describe("Master data editing",()=>{
   beforeEach(()=>resetAemsState());
   const people=()=>{const s=getAemsState();return {s,admin:s.profiles.find(p=>p.role==="ADMIN")!,accounting:s.profiles.find(p=>p.role==="ACCOUNTING")!,equipment:s.profiles.find(p=>p.role==="MAINTENANCE")!};};
   it("updates equipment condition, status and metadata with an old/new audit",()=>{
-    const {s,equipment}=people();const eq=createEquipment(equipment,{equipment_no:"TEST-EDIT",name:"Uji equipment"});
+    const {s,equipment}=people();const eq=createEquipment(equipment,{equipment_no:"TEST-EDIT",name:"Uji equipment",kind:"WHOLE_UNIT"});
     updateEquipment(equipment,eq.id,{condition:"RUSAK_RINGAN",status:"INACTIVE",manufacturer:"Maker",model:"New model",install_date:"2026-11-12",specification:"Updated specification",row_version:eq.row_version,change_reason:"Pemeriksaan fisik"});
     expect(eq).toMatchObject({condition:"RUSAK_RINGAN",status:"INACTIVE",manufacturer:"Maker",model:"New model"});
     expect(s.audit_logs[0]).toMatchObject({action:"UPDATE",old_values:{condition:"BAIK"},new_values:{condition:"RUSAK_RINGAN",change_reason:"Pemeriksaan fisik"}});
