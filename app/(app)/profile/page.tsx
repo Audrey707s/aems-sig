@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { PasswordChangeForm } from "@/components/ui/PasswordChangeForm";
 import { UserCheck, Shield } from "lucide-react";
 import { useAuth } from "@/components/ui/AppShell";
 import { getRoleBadgeColor, getRoleLabel, PermissionAction } from "@/lib/permissions/rbac";
@@ -59,6 +60,8 @@ export default function ProfilePage() {
           </span>
         </div>
       </div>
+
+      <PasswordChangeForm />
 
       <div className="p-6 rounded-xl bg-white border border-[#E8E2DB] shadow-sm space-y-3 text-xs">
         <h2 className="text-sm font-bold text-[#1A3263] flex items-center gap-2 border-b border-[#E8E2DB] pb-2">

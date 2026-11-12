@@ -1,10 +1,11 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getAemsState, updateAppSettings } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { hasPermission } from "@/lib/permissions/rbac";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     if (!hasPermission(profile, "settings:manage")) {
@@ -29,7 +30,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+async function handlePUT(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const body = await req.json();
@@ -41,6 +42,12 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handlePATCH(req: NextRequest) {
   return PUT(req);
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const PUT = withAemsPersistence(handlePUT);
+
+export const PATCH = withAemsPersistence(handlePATCH);

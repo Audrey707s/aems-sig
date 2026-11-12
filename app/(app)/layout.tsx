@@ -6,7 +6,8 @@ import { AemsError } from "@/lib/utils/errors";
 
 export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile().catch((error: unknown) => {
-    if (error instanceof AemsError && [401, 403].includes(error.httpStatus)) redirect("/login");
+    if (error instanceof AemsError && error.httpStatus === 401) redirect("/login");
+    if (error instanceof AemsError && error.httpStatus === 403) redirect("/pending-approval");
     throw error;
   });
   return <Suspense fallback={<div role="status" className="p-6 text-sm text-slate-600">Memuat aplikasi...</div>}>

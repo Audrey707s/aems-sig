@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { validateAndPreviewMappingItem } from "@/lib/db/store";
 import { formatErrorResponse } from "@/lib/utils/errors";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     await getCurrentProfile();
     const body = await req.json();
@@ -19,3 +20,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const POST = withAemsPersistence(handlePOST);

@@ -1,3 +1,4 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { buildStandardReport } from "@/lib/db/reports";
@@ -70,12 +71,16 @@ async function exportReport(
   }
 }
 
-export async function GET(req: NextRequest, context: { params: Promise<{ name: string }> }) {
+async function handleGET(req: NextRequest, context: { params: Promise<{ name: string }> }) {
   const filters = Object.fromEntries(req.nextUrl.searchParams.entries());
   return exportReport(req, context, req.nextUrl.searchParams.get("format") || "xlsx", filters);
 }
 
-export async function POST(req: NextRequest, context: { params: Promise<{ name: string }> }) {
+async function handlePOST(req: NextRequest, context: { params: Promise<{ name: string }> }) {
   const body = await req.json().catch(() => ({}));
   return exportReport(req, context, String(body.format || "EXCEL"), body.filters || {});
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

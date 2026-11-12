@@ -1,3 +1,5 @@
+import { getSignedInProfile } from "@/lib/auth/personal-account";
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getAemsState, resetAemsState } from "@/lib/db/store";
 import { AEMS_SESSION_COOKIE, getCurrentProfile } from "@/lib/auth/session";
@@ -5,7 +7,7 @@ import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     const state = getAemsState();
@@ -65,8 +67,9 @@ export async function POST(req: NextRequest) {
         email: String(body.email).trim(), password: String(body.password),
       });
       if (error || !data.user) throw new AemsError("UNAUTHORIZED", "Email atau kata sandi tidak valid.", 401);
-      const profile = await getCurrentProfile();
-      return NextResponse.json({ data: { user: profile }, profile });
+      const profile = await getSignedInProfile();
+      if (!profile?.is_active) throw new AemsError("FORBIDDEN", "Akun tidak aktif. Hubungi admin.", 403);
+      return NextResponse.json({ data: { user: profile }, profile, redirect: profile.role ? "/dashboard" : "/pending-approval" });
     }
 
     const state = getAemsState();
@@ -120,3 +123,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);

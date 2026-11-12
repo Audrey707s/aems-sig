@@ -192,8 +192,6 @@ export default function AssetDetailPage() {
             >
               <option value="ACTIVE">ACTIVE</option>
               <option value="INACTIVE">INACTIVE</option>
-              <option value="UNDER_MAINTENANCE">UNDER_MAINTENANCE</option>
-              <option value="RETIRED">RETIRED</option>
               <option value="DISPOSED">DISPOSED</option>
             </select>
           </div>

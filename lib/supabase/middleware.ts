@@ -1,9 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "./client";
-import { AEMS_SESSION_COOKIE } from "@/lib/auth/session";
+import { AEMS_SESSION_COOKIE } from "@/lib/auth/constants";
 
-const PUBLIC_PATHS = ["/login", "/api/v1/auth/session"];
+const PUBLIC_PATHS = ["/login", "/register", "/pending-approval", "/auth/callback", "/auth/confirm", "/api/v1/auth/session", "/api/v1/auth/register"];
 
 export async function updateSessionAndProtectRoutes(request: NextRequest) {
   let supabaseResponse = NextResponse.next({

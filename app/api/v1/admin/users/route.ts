@@ -1,10 +1,12 @@
+import { z } from "zod";
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getAemsState, manageUserProfile } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { hasPermission } from "@/lib/permissions/rbac";
 
-export async function GET() {
+async function handleGET() {
   try {
     const profile = await getCurrentProfile();
     if (!hasPermission(profile, "users:manage")) {
@@ -22,10 +24,12 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
-    const body = await req.json();
+    const parsed = z.object({id: z.string().uuid(), email: z.string().email(), full_name: z.string().trim().min(2).max(120), department: z.string().trim().max(120).nullable().optional(), role: z.enum(["ACCOUNTING", "MAINTENANCE", "ADMIN"]).nullable(), is_active: z.boolean()}).safeParse(await req.json());
+    if (!parsed.success) throw new AemsError("VALIDATION", "Data pengguna atau jenis akun tidak valid.", 400);
+    const body = parsed.data;
     const updated = manageUserProfile(profile, {
       id: body.id,
       email: String(body.email || ""),
@@ -40,3 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const POST = withAemsPersistence(handlePOST);

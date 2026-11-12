@@ -1,3 +1,4 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
@@ -10,7 +11,7 @@ import {
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { softDeleteSchema, updateAssetSchema } from "@/lib/utils/schemas";
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -63,7 +64,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
+async function handlePATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -94,7 +95,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
+async function handleDELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -118,3 +119,9 @@ export async function DELETE(
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);
+
+export const PATCH = withAemsPersistence(handlePATCH);
+
+export const DELETE = withAemsPersistence(handleDELETE);

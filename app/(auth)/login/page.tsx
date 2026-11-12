@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { AppRole } from "@/lib/types/domain";
 
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan konfirmasi tidak berlaku atau sudah kedaluwarsa. Silakan coba login atau daftar kembali."); }, []);
 
   const handleRolePreset = (role: AppRole) => {
     setSelectedRole(role);
@@ -34,7 +36,7 @@ export default function LoginPage() {
       });
       const body = await response.json();
       if (!response.ok) { setError(body.error?.message || "Login gagal. Silakan coba kembali."); return; }
-      router.push("/dashboard");
+      router.push(body.redirect || "/dashboard");
       router.refresh();
     } catch { setError("Tidak dapat terhubung. Periksa koneksi dan coba kembali."); } finally {
       setLoading(false);
@@ -99,10 +101,12 @@ export default function LoginPage() {
           </div>}
 
           <div>
-            <label className="block text-xs font-semibold text-[#1A3263] mb-1">
-              Email Korporat
+            <label htmlFor="login-email" className="block text-xs font-semibold text-[#1A3263] mb-1">
+              Email
             </label>
             <input
+              id="login-email"
+              autoComplete="username"
               type="email"
               required
               value={email}
@@ -112,10 +116,12 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1A3263] mb-1">
+            <label htmlFor="login-password" className="block text-xs font-semibold text-[#1A3263] mb-1">
               Kata Sandi
             </label>
             <input
+              id="login-password"
+              autoComplete="current-password"
               type="password"
               required
               value={password}
@@ -139,6 +145,7 @@ export default function LoginPage() {
             <span>{loading ? "Memproses..." : "Masuk ke Aplikasi"}</span>
             <ArrowRight className="w-4 h-4 text-[#FAB95B]" />
           </button>
+          <Link href="/register" className="block text-center text-sm font-semibold underline">Belum punya akun? Daftar</Link>
         </form>
       </div>
     </div>

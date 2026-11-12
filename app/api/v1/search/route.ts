@@ -1,9 +1,10 @@
+import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { searchBidirectional } from "@/lib/db/store";
 import { formatErrorResponse } from "@/lib/utils/errors";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
     const q = req.nextUrl.searchParams.get("q") || "";
@@ -14,3 +15,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(formatted.body, { status: formatted.status });
   }
 }
+
+export const GET = withAemsPersistence(handleGET);

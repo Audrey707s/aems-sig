@@ -105,11 +105,11 @@ export function getRoleLabel(role: AppRole | null | undefined): string {
     case "ACCOUNTING":
       return "Accounting";
     case "MAINTENANCE":
-      return "Maintenance / Operasional";
+      return "Equipment";
     case "ADMIN":
       return "Administrator";
     default:
-      return "Belum Ada Role";
+      return "Menunggu Penetapan";
   }
 }
 

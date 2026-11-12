@@ -3,13 +3,15 @@
 // =============================================================================
 
 import { cookies, headers } from "next/headers";
+import { aemsRequestState } from "@/lib/db/context";
 import { getAemsState } from "@/lib/db/store";
 import { Profile } from "@/lib/types/domain";
 import { AemsError } from "@/lib/utils/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
-export const AEMS_SESSION_COOKIE = "aems_session_user_id";
+import { AEMS_SESSION_COOKIE } from "./constants";
+export { AEMS_SESSION_COOKIE } from "./constants";
 
 /**
  * Resolves the currently authenticated user profile:
@@ -23,7 +25,8 @@ export const AEMS_SESSION_COOKIE = "aems_session_user_id";
  * - Accounts without an assigned role (`role = null`) are immediately rejected (403)
  */
 export async function getCurrentProfile(): Promise<Profile> {
-  const state = getAemsState();
+  const verified = aemsRequestState.getStore()?.profile;
+  if (verified) return verified;
   let userId: string | undefined;
 
   try {
@@ -95,6 +98,8 @@ export async function getCurrentProfile(): Promise<Profile> {
       // Fallback outside request context
     }
   }
+
+  const state = getAemsState();
 
   if (!userId) {
     return state.profiles[2]; // Default to Admin profile for initial seamless preview

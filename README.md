@@ -47,4 +47,22 @@ npm test
 npm run dev
 ```
 
-Buka `http://localhost:3000`. Untuk keperluan pengujian UAT lokal 3-role, Anda dapat beralih role secara instan (**Accounting**, **Maintenance**, **Administrator**) melalui pemilih sesi di bilah atas (*top bar*) berwarna merah `#EB232D` atau melalui halaman `/login`.
+Buka `http://localhost:3000`. Konfigurasi `AEMS_STORAGE_MODE=supabase` mengaktifkan autentikasi Supabase dan penyimpanan persisten di seluruh API. Jalankan migrasi tambahan `supabase/migrations/20261111201516_persistent_runtime_repository.sql` setelah skema awal. Semua URL/key harus berasal dari proyek AEMS yang sama; service-role key hanya tersedia di server.
+
+Untuk pengembangan offline, gunakan `AEMS_STORAGE_MODE=local-store` secara eksplisit. Mode ini memakai data contoh sementara dan tidak diizinkan pada deployment production. Pemilih peran/reset contoh memerlukan `NEXT_PUBLIC_AEMS_DEMO_MODE=true` dan tidak tersedia pada database production.
+
+## Penyimpanan persisten
+
+Setiap API memverifikasi akun aktif, membaca satu snapshot konsisten dari tabel Postgres, dan menjalankan domain logic di konteks request yang terisolasi. Perubahan baris, relasi, import, serta audit dikirim bersama melalui RPC `aems_apply_changes`; respons sukses baru dikirim setelah transaksi berhasil. Tidak ada penulisan file lokal atau ketergantungan pada memori proses Vercel untuk menyimpan data.
+
+RPC mengambil lock transaksi dan memeriksa revisi database. Penulisan berdasarkan revisi lama menghasilkan HTTP 409 dan pengguna harus memuat ulang; sistem tidak mengulang request mutasi secara diam-diam. Trigger revisi juga mencakup perubahan melalui dashboard SQL. Riwayat tidak dihapus atau ditimpa, dan penghapusan master tetap berupa penonaktifan. Fungsi repository hanya dapat dipanggil oleh service-role server, sedangkan RLS tetap aktif pada tabel publik.
+
+Repository saat ini membaca snapshot domain lengkap untuk mempertahankan aturan lintas modul pada MVP. Volume import besar memerlukan pengukuran ukuran payload/waktu eksekusi dan pengembangan pemrosesan bertahap; tidak ada klaim kapasitas tanpa pengujian beban.
+
+## Akun personal dan jenis akun
+
+Pengguna mendaftar melalui `/register` memakai nama, email, dan password sendiri. Pendaftaran tidak menerima pilihan role. Trigger database membuat profil dengan `role=null`; pengguna hanya dapat membuka halaman menunggu penetapan dan mengelola password sendiri sampai admin menetapkan jenis akun. Halaman Pengguna menyediakan antrean Menunggu Penetapan dan pilihan Accounting/Equipment. Label Equipment memakai identifier internal MAINTENANCE agar data dan kewenangan yang sudah ada tetap kompatibel.
+
+Ganti Password tersedia di Profil dan halaman menunggu penetapan. Server memverifikasi password lama melalui Supabase Auth, memeriksa perbedaan dan konfirmasi password baru, lalu memperbarui identitas pengguna yang sedang login. Password tidak disimpan di tabel aplikasi, log, atau audit. Sesi lain ditutup setelah perubahan. Admin aktif terakhir dilindungi di server dan trigger database.
+
+Jalankan juga migrasi `20261112021715_personal_account_registration.sql`. Jika konfirmasi email diaktifkan pada Supabase, konfigurasi Site URL dan allowlist redirect untuk domain deployment dan `/auth/callback`; aplikasi mendukung callback PKCE serta konfirmasi token hash. Gunakan pengaturan pengiriman email yang tersedia pada proyek, tanpa menonaktifkan verifikasi secara otomatis.
