@@ -1,9 +1,22 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  Suspense,
+} from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, ExternalLink, AlertCircle } from "lucide-react";
+import {
+  Cpu,
+  FileSpreadsheet,
+  Plus,
+  Search,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/components/ui/AppShell";
 
 interface EnrichedEquipment {
@@ -36,7 +49,10 @@ function EquipmentContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [references, setReferences] = useState<{ categories: Array<{id: string; name: string}>; locations: Array<{id: string; name: string}> }>({categories: [], locations: []});
+  const [references, setReferences] = useState<{
+    categories: Array<{ id: string; name: string }>;
+    locations: Array<{ id: string; name: string }>;
+  }>({ categories: [], locations: [] });
   const [items, setItems] = useState<EnrichedEquipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQ);
@@ -73,22 +89,36 @@ function EquipmentContent() {
       if (status) params.set("status", status);
       const res = await fetch(`/api/v1/equipment?${params.toString()}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || "Data equipment gagal dimuat.");
+      if (!res.ok)
+        throw new Error(json.error?.message || "Data equipment gagal dimuat.");
       if (sequence !== requestSequence.value) return;
       setItems(json.data || []);
       setTotal(json.meta?.total || 0);
       setTotalPages(json.meta?.total_pages || 1);
-      setReferences({categories: json.references?.equipment_categories || [], locations: json.references?.locations || []});
+      setReferences({
+        categories: json.references?.equipment_categories || [],
+        locations: json.references?.locations || [],
+      });
     } catch (error) {
-      if (sequence === requestSequence.value) setErrorMsg(error instanceof Error ? error.message : "Periksa koneksi dan coba kembali.");
+      if (sequence === requestSequence.value)
+        setErrorMsg(
+          error instanceof Error
+            ? error.message
+            : "Periksa koneksi dan coba kembali.",
+        );
     } finally {
       if (sequence === requestSequence.value) setLoading(false);
     }
   }, [q, condition, kind, page, requestSequence, status]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { void loadEquipment(); }, 200);
-    return () => { clearTimeout(timer); requestSequence.value++; };
+    const timer = setTimeout(() => {
+      void loadEquipment();
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      requestSequence.value++;
+    };
   }, [loadEquipment, requestSequence]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -97,39 +127,62 @@ function EquipmentContent() {
     setSaving(true);
     setErrorMsg(null);
     try {
-    const res = await fetch("/api/v1/equipment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({...formData, equipment_category_id: formData.equipment_category_id || null, location_id: formData.location_id || null}),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setErrorMsg(json.error?.message || "Gagal menambah equipment.");
-      return;
+      const res = await fetch("/api/v1/equipment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          equipment_category_id: formData.equipment_category_id || null,
+          location_id: formData.location_id || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setErrorMsg(json.error?.message || "Gagal menambah equipment.");
+        return;
+      }
+      setShowCreateModal(false);
+      setFormData((prev) => ({
+        ...prev,
+        equipment_no: "",
+        name: "",
+        specification: "",
+        serial_no: "",
+      }));
+      loadEquipment();
+    } catch {
+      setErrorMsg("Data gagal disimpan. Periksa koneksi dan coba kembali.");
+    } finally {
+      setSaving(false);
     }
-    setShowCreateModal(false);
-    setFormData((prev) => ({ ...prev, equipment_no: "", name: "", specification: "", serial_no: "" }));
-    loadEquipment();
-    } catch { setErrorMsg("Data gagal disimpan. Periksa koneksi dan coba kembali."); }
-    finally { setSaving(false); }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
-            Master Equipment
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-[#1A3263]">
+            <Cpu className="h-6 w-6 text-[#547792]" />
+            Daftar Equipment
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/equipment/unmapped"
             className="px-3.5 py-2.5 rounded-lg border border-[#FAB95B] bg-[#FEF6E7] text-[#8A580C] text-xs font-bold hover:bg-[#FAB95B]/30 transition"
           >
             Lihat Unmapped Equipment
           </Link>
+          {can("import:equipment") && (
+            <Link
+              href="/equipment/import"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#E8E2DB] bg-white px-3.5 py-2 text-xs font-bold"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Import Excel
+            </Link>
+          )}
           {can("equipment:write") && (
             <button
               type="button"
@@ -153,14 +206,20 @@ function EquipmentContent() {
           <input
             type="text"
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); } }
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
             placeholder="Cari Nomor Equipment, Nama, Spesifikasi, atau Serial Number..."
             className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-[#F6F4F0]/50 focus:bg-white outline-none focus:border-[#1A3263]"
           />
         </div>
         <select
           value={kind}
-          onChange={(e) => { setKind(e.target.value); setPage(1); } }
+          onChange={(e) => {
+            setKind(e.target.value);
+            setPage(1);
+          }}
           className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
         >
           <option value="">Semua Jenis Equipment</option>
@@ -170,7 +229,10 @@ function EquipmentContent() {
         </select>
         <select
           value={condition}
-          onChange={(e) => { setCondition(e.target.value); setPage(1); } }
+          onChange={(e) => {
+            setCondition(e.target.value);
+            setPage(1);
+          }}
           className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
         >
           <option value="">Semua Kondisi Fisik</option>
@@ -181,7 +243,21 @@ function EquipmentContent() {
         </select>
       </div>
 
-      {errorMsg && !showCreateModal && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMsg} <button type="button" onClick={() => void loadEquipment()} className="ml-3 underline">Coba kembali</button></div>}
+      {errorMsg && !showCreateModal && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
+          {errorMsg}{" "}
+          <button
+            type="button"
+            onClick={() => void loadEquipment()}
+            className="ml-3 underline"
+          >
+            Coba kembali
+          </button>
+        </div>
+      )}
       {/* Table */}
       <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -230,8 +306,8 @@ function EquipmentContent() {
                         {eq.kind === "WHOLE_UNIT"
                           ? "Perangkat Utuh"
                           : eq.kind === "COMPONENT"
-                          ? "Komponen"
-                          : "Lainnya"}
+                            ? "Komponen"
+                            : "Lainnya"}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -270,7 +346,14 @@ function EquipmentContent() {
                         <span>Detail</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
-                      {can("equipment:write") && <Link href={`/equipment/${eq.id}?edit=1`} className="ml-3 inline-flex rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-xs font-semibold text-[#1A3263]">Ubah</Link>}
+                      {can("equipment:write") && (
+                        <Link
+                          href={`/equipment/${eq.id}?edit=1`}
+                          className="ml-3 inline-flex rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-xs font-semibold text-[#1A3263]"
+                        >
+                          Ubah
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -282,10 +365,26 @@ function EquipmentContent() {
 
       {/* Create Modal */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <span role="status">{total} data ditemukan · Halaman {page} dari {totalPages}</span>
+        <span role="status">
+          {total} data ditemukan · Halaman {page} dari {totalPages}
+        </span>
         <div className="flex gap-2">
-          <button type="button" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border bg-white px-3 py-2">Sebelumnya</button>
-          <button type="button" disabled={loading || page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-lg border bg-white px-3 py-2">Berikutnya</button>
+          <button
+            type="button"
+            disabled={loading || page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-lg border bg-white px-3 py-2"
+          >
+            Sebelumnya
+          </button>
+          <button
+            type="button"
+            disabled={loading || page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-lg border bg-white px-3 py-2"
+          >
+            Berikutnya
+          </button>
         </div>
       </div>
 
@@ -293,7 +392,9 @@ function EquipmentContent() {
         <div className="fixed inset-0 z-50 bg-[#1A3263]/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#E8E2DB] space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2DB] pb-3">
-              <h2 className="text-base font-bold text-[#1A3263]">Tambah Master Equipment</h2>
+              <h2 className="text-base font-bold text-[#1A3263]">
+                Tambah Daftar Equipment
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -312,36 +413,69 @@ function EquipmentContent() {
 
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="font-semibold">Kategori
-                  <select value={formData.equipment_category_id} onChange={e => setFormData({...formData, equipment_category_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                <label className="font-semibold">
+                  Kategori
+                  <select
+                    value={formData.equipment_category_id}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        equipment_category_id: e.target.value,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border p-2"
+                  >
                     <option value="">Pilih kategori</option>
-                    {references.categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {references.categories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
-                <label className="font-semibold">Lokasi
-                  <select value={formData.location_id} onChange={e => setFormData({...formData, location_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                <label className="font-semibold">
+                  Lokasi
+                  <select
+                    value={formData.location_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location_id: e.target.value })
+                    }
+                    className="mt-1 w-full rounded-lg border p-2"
+                  >
                     <option value="">Pilih lokasi</option>
-                    {references.locations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {references.locations.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Nomor Equipment *</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Nomor Equipment *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="EQ-401"
                     value={formData.equipment_no}
-                    onChange={(e) => setFormData({ ...formData, equipment_no: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, equipment_no: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Jenis Equipment *</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Jenis Equipment *
+                  </label>
                   <select
                     value={formData.kind}
-                    onChange={(e) => setFormData({ ...formData, kind: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, kind: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] bg-white text-[#1A3263]"
                   >
                     <option value="WHOLE_UNIT">Perangkat Utuh</option>
@@ -352,31 +486,43 @@ function EquipmentContent() {
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1A3263] mb-1">Nama Equipment *</label>
+                <label className="block font-semibold text-[#1A3263] mb-1">
+                  Nama Equipment *
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Nomor Seri</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Nomor Seri
+                  </label>
                   <input
                     type="text"
                     value={formData.serial_no}
-                    onChange={(e) => setFormData({ ...formData, serial_no: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, serial_no: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Kondisi Fisik</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Kondisi Fisik
+                  </label>
                   <select
                     value={formData.condition}
-                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, condition: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] bg-white text-[#1A3263]"
                   >
                     <option value="BAIK">BAIK</option>
@@ -388,11 +534,15 @@ function EquipmentContent() {
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1A3263] mb-1">Spesifikasi Teknis</label>
+                <label className="block font-semibold text-[#1A3263] mb-1">
+                  Spesifikasi Teknis
+                </label>
                 <textarea
                   rows={2}
                   value={formData.specification}
-                  onChange={(e) => setFormData({ ...formData, specification: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, specification: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                 />
               </div>
@@ -423,7 +573,11 @@ function EquipmentContent() {
 
 export default function EquipmentPage() {
   return (
-    <Suspense fallback={<div className="text-sm text-[#547792]">Memuat daftar equipment...</div>}>
+    <Suspense
+      fallback={
+        <div className="text-sm text-[#547792]">Memuat daftar equipment...</div>
+      }
+    >
       <EquipmentContent />
     </Suspense>
   );

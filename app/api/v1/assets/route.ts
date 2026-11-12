@@ -19,18 +19,30 @@ async function handleGET(req: NextRequest) {
     const sortBy = sp.get("sort_by") || "sap_asset_no";
     const sortDir = sp.get("sort_dir") === "desc" ? -1 : 1;
     const page = Math.max(Number(sp.get("page") || 1), 1);
-    const pageSize = Math.min(Math.max(Number(sp.get("page_size") || 25), 1), 100);
+    const pageSize = Math.min(
+      Math.max(Number(sp.get("page_size") || 25), 1),
+      100,
+    );
 
-    const activeEquipment = state.equipment.filter((e) => e.deleted_at === null);
+    const activeEquipment = state.equipment.filter(
+      (e) => e.deleted_at === null,
+    );
     const mappedAssetIds = new Set<string>();
     for (const eq of activeEquipment) {
       if (eq.root_asset_id) mappedAssetIds.add(eq.root_asset_id);
     }
 
     let items = getEnrichedAssets(false, profile.role).map((a) => {
-      const totalEqCount = activeEquipment.filter((e) => e.root_asset_id === a.id).length;
-      const directEqCount = activeEquipment.filter(
-        (e) => state.equipment_active_parent.some(p => p.equipment_id === e.id && p.parent_kind === "ASSET" && p.parent_id === a.id)
+      const totalEqCount = activeEquipment.filter(
+        (e) => e.root_asset_id === a.id,
+      ).length;
+      const directEqCount = activeEquipment.filter((e) =>
+        state.equipment_active_parent.some(
+          (p) =>
+            p.equipment_id === e.id &&
+            p.parent_kind === "ASSET" &&
+            p.parent_id === a.id,
+        ),
       ).length;
       return {
         ...a,
@@ -49,7 +61,7 @@ async function handleGET(req: NextRequest) {
           (a.category_name || "").toLowerCase().includes(q) ||
           (a.location_name || "").toLowerCase().includes(q) ||
           (a.cost_center && a.cost_center.toLowerCase().includes(q)) ||
-          (a.serial_no && a.serial_no.toLowerCase().includes(q))
+          (a.serial_no && a.serial_no.toLowerCase().includes(q)),
       );
     }
     if (status) {
@@ -85,8 +97,8 @@ async function handleGET(req: NextRequest) {
         total_pages: Math.max(Math.ceil(total / pageSize), 1),
       },
       references: {
-        asset_categories: state.asset_categories,
-        locations: state.locations,
+        asset_categories: state.asset_categories.filter((r) => r.is_active),
+        locations: state.locations.filter((r) => r.is_active),
       },
     });
   } catch (err) {
@@ -105,7 +117,7 @@ async function handlePOST(req: NextRequest) {
         "VALIDATION",
         parsed.error.issues.map((i) => i.message).join("; "),
         400,
-        { issues: parsed.error.issues }
+        { issues: parsed.error.issues },
       );
     }
     const created = createAsset(profile, parsed.data);

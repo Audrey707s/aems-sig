@@ -29,6 +29,20 @@ import { Profile } from "@/lib/types/domain";
 describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy", () => {
   beforeEach(() => {
     resetAemsState();
+    const state = getAemsState();
+    for (const role of ["MAINTENANCE", "ACCOUNTING"] as const) {
+      const staff = state.profiles.find((p) => p.role === role)!;
+      const manager = {
+        ...staff,
+        id: crypto.randomUUID(),
+        email: `manager-${role}@test.invalid`,
+        account_level: "MANAGER" as const,
+        manager_id: null,
+      };
+      state.profiles.push(manager);
+      staff.manager_id = manager.id;
+      staff.account_level = "STAFF";
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -43,33 +57,33 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
 
     it("supports optional leading-zero numeric padding when configured (A-01 / Q-01)", () => {
       expect(normalizeKey("12345", { padNumeric: true, padLength: 12 })).toBe(
-        "000000012345"
+        "000000012345",
       );
       expect(normalizeKey("SAP-001", { padNumeric: true, padLength: 12 })).toBe(
-        "SAP-001"
+        "SAP-001",
       );
     });
 
     it("builds deterministic composite keys for Asset and Equipment", () => {
       expect(buildAssetCompositeKey(" 1000 ", " sap-001 ", "0000")).toBe(
-        "1000::SAP-001::0000"
+        "1000::SAP-001::0000",
       );
       expect(buildEquipmentCompositeKey(" cmms ", " eq-101 ")).toBe(
-        "CMMS::EQ-101"
+        "CMMS::EQ-101",
       );
     });
 
     it("neutralizes spreadsheet formula injection prefixes (=, +, -, @)", () => {
       expect(sanitizeSpreadsheetCell("=SUM(A1:A10)")).toBe("'=SUM(A1:A10)");
       expect(sanitizeSpreadsheetCell("+CMD|' /C calc'!A0")).toBe(
-        "'+CMD|' /C calc'!A0"
+        "'+CMD|' /C calc'!A0",
       );
       expect(sanitizeSpreadsheetCell("-100+200")).toBe("'-100+200");
-      expect(sanitizeSpreadsheetCell("@HYPERLINK(\"http://evil\")")).toBe(
-        "'@HYPERLINK(\"http://evil\")"
+      expect(sanitizeSpreadsheetCell('@HYPERLINK("http://evil")')).toBe(
+        '\'@HYPERLINK("http://evil")',
       );
       expect(sanitizeSpreadsheetCell("Genset Caterpillar")).toBe(
-        "Genset Caterpillar"
+        "Genset Caterpillar",
       );
     });
   });
@@ -155,7 +169,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
         createAsset(accounting, {
           sap_asset_no: "  sap-001 ",
           name: "Duplikat Genset",
-        })
+        }),
       ).toThrowError(AemsError);
 
       try {
@@ -193,7 +207,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
         updateAsset(accounting, SEED_IDS.ASSET_SAP_004, {
           sap_asset_no: "SAP-004-RENAMED",
           row_version: 1,
-        })
+        }),
       ).toThrow(/hanya diizinkan untuk Administrator/i);
 
       const updated = updateAsset(admin, SEED_IDS.ASSET_SAP_004, {
@@ -236,7 +250,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       const accounting = state.profiles.find((p) => p.role === "ACCOUNTING")!;
 
       expect(() =>
-        softDeleteAsset(accounting, SEED_IDS.ASSET_SAP_001, "Uji hapus")
+        softDeleteAsset(accounting, SEED_IDS.ASSET_SAP_001, "Uji hapus"),
       ).toThrow(/masih memiliki .* equipment aktif/i);
     });
 
@@ -245,7 +259,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       const maintenance = state.profiles.find((p) => p.role === "MAINTENANCE")!;
 
       expect(() =>
-        softDeleteEquipment(maintenance, SEED_IDS.EQ_001, "Uji hapus parent")
+        softDeleteEquipment(maintenance, SEED_IDS.EQ_001, "Uji hapus parent"),
       ).toThrow(/masih memiliki .* sub-equipment aktif/i);
     });
 
@@ -257,7 +271,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       const retired = softDeleteEquipment(
         maintenance,
         SEED_IDS.EQ_101,
-        "Motor dinamo rusak total dan dipensiunkan"
+        "Motor dinamo rusak total dan dipensiunkan",
       );
       expect(retired.status).toBe("INACTIVE");
       expect(retired.deleted_at).not.toBeNull();
@@ -265,13 +279,13 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
 
       // Active parent slot removed
       const activeSlot = state.equipment_active_parent.find(
-        (p) => p.equipment_id === SEED_IDS.EQ_101
+        (p) => p.equipment_id === SEED_IDS.EQ_101,
       );
       expect(activeSlot).toBeUndefined();
 
       // Historical relationship preserved with valid_to != null and end_reason = RETIRE
       const closedRel = state.equipment_relationships.find(
-        (r) => r.child_equipment_id === SEED_IDS.EQ_101
+        (r) => r.child_equipment_id === SEED_IDS.EQ_101,
       );
       expect(closedRel?.valid_to).not.toBeNull();
       expect(closedRel?.end_reason).toBe("RETIRE");
@@ -298,7 +312,9 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       });
 
       expect(promoted.equipment.equipment_no).toBe("EQ-109");
-      expect(promoted.specItem.promoted_equipment_id).toBe(promoted.equipment.id);
+      expect(promoted.specItem.promoted_equipment_id).toBe(
+        promoted.equipment.id,
+      );
     });
   });
 
@@ -313,7 +329,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
           action_type: "MOVE",
           to_parent_kind: "EQUIPMENT",
           to_parent_id: SEED_IDS.EQ_001,
-        })
+        }),
       ).toThrow(/AE001/);
     });
 
@@ -394,7 +410,8 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
             to_parent_id: SEED_IDS.ASSET_SAP_004,
           },
         ],
-        reason: "Relokasi unit genset utama beserta seluruh sub-equipment ke fasilitas SAP-004",
+        reason:
+          "Relokasi unit genset utama beserta seluruh sub-equipment ke fasilitas SAP-004",
       });
 
       expect(req.status).toBe("SUBMITTED");
@@ -405,7 +422,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
         admin,
         req.id,
         "APPROVE",
-        "Disetujui sesuai berita acara relokasi"
+        "Disetujui sesuai berita acara relokasi",
       );
       expect(approved.status).toBe("APPLIED");
 
@@ -444,7 +461,7 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       });
 
       expect(() =>
-        decideMappingRequest(admin, req.id, "APPROVE", "Approve sendiri")
+        decideMappingRequest(admin, req.id, "APPROVE", "Approve sendiri"),
       ).toThrow(/Maker-Checker/i);
     });
 
@@ -457,24 +474,30 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       const req = submitMappingRequest(accounting, {
         items: [
           {
-            equipment_id: SEED_IDS.EQ_900,
-            action_type: "LINK",
+            equipment_id: SEED_IDS.EQ_001,
+            action_type: "MOVE",
             to_parent_kind: "ASSET",
             to_parent_id: SEED_IDS.ASSET_SAP_004,
           },
         ],
-        reason: "Link EQ-900 ke SAP-004",
+        reason: "Pindahkan EQ-001 ke SAP-004",
       });
 
       // Before Admin approves req, SAP-004 is soft-deleted!
-      softDeleteAsset(accounting, SEED_IDS.ASSET_SAP_004, "Aset ditutup sebelum approval");
+      softDeleteAsset(
+        accounting,
+        SEED_IDS.ASSET_SAP_004,
+        "Aset ditutup sebelum approval",
+      );
 
       // Now Admin attempts to approve req -> target asset is inactive (AE011) -> status transitions to FAILED_VALIDATION
       expect(() =>
-        decideMappingRequest(admin, req.id, "APPROVE", "Coba setujui")
+        decideMappingRequest(admin, req.id, "APPROVE", "Coba setujui"),
       ).toThrow(/AE011/);
 
-      const updatedReq = state.mapping_change_requests.find((r) => r.id === req.id)!;
+      const updatedReq = state.mapping_change_requests.find(
+        (r) => r.id === req.id,
+      )!;
       expect(updatedReq.status).toBe("FAILED_VALIDATION");
     });
 
@@ -484,22 +507,34 @@ describe("AEMS Unit Tests — Normalization, RBAC, Domain Invariants & Hierarchy
       // then moved to EQ-202 (under EQ-002 / SAP-002) on 2026-10-12T09:00:00.000Z.
       const treeSept2026 = getAssetEquipmentTree(
         SEED_IDS.ASSET_SAP_002,
-        "2026-09-15T00:00:00.000Z"
+        "2026-09-15T00:00:00.000Z",
       );
       const eq002Sept = treeSept2026.find((n) => n.equipment_no === "EQ-002")!;
-      const eq201Sept = eq002Sept.children.find((n) => n.equipment_no === "EQ-201")!;
-      const eq202Sept = eq002Sept.children.find((n) => n.equipment_no === "EQ-202")!;
+      const eq201Sept = eq002Sept.children.find(
+        (n) => n.equipment_no === "EQ-201",
+      )!;
+      const eq202Sept = eq002Sept.children.find(
+        (n) => n.equipment_no === "EQ-202",
+      )!;
       expect(eq201Sept.children.map((c) => c.equipment_no)).toContain("EQ-203");
-      expect(eq202Sept.children.map((c) => c.equipment_no)).not.toContain("EQ-203");
+      expect(eq202Sept.children.map((c) => c.equipment_no)).not.toContain(
+        "EQ-203",
+      );
 
       const treeNov2026 = getAssetEquipmentTree(
         SEED_IDS.ASSET_SAP_002,
-        "2026-11-01T00:00:00.000Z"
+        "2026-11-01T00:00:00.000Z",
       );
       const eq002Nov = treeNov2026.find((n) => n.equipment_no === "EQ-002")!;
-      const eq201Nov = eq002Nov.children.find((n) => n.equipment_no === "EQ-201")!;
-      const eq202Nov = eq002Nov.children.find((n) => n.equipment_no === "EQ-202")!;
-      expect(eq201Nov.children.map((c) => c.equipment_no)).not.toContain("EQ-203");
+      const eq201Nov = eq002Nov.children.find(
+        (n) => n.equipment_no === "EQ-201",
+      )!;
+      const eq202Nov = eq002Nov.children.find(
+        (n) => n.equipment_no === "EQ-202",
+      )!;
+      expect(eq201Nov.children.map((c) => c.equipment_no)).not.toContain(
+        "EQ-203",
+      );
       expect(eq202Nov.children.map((c) => c.equipment_no)).toContain("EQ-203");
     });
   });

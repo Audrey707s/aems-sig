@@ -1,7 +1,11 @@
 import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { createEquipment, getAemsState, getEnrichedEquipment } from "@/lib/db/store";
+import {
+  createEquipment,
+  getAemsState,
+  getEnrichedEquipment,
+} from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
 import { createEquipmentSchema } from "@/lib/utils/schemas";
 
@@ -16,11 +20,16 @@ async function handleGET(req: NextRequest) {
     const status = sp.get("status") || "";
     const condition = sp.get("condition") || "";
     const locationId = sp.get("location_id") || "";
-    const mapping = sp.get("mapping") || (sp.get("unmapped_only") === "true" ? "UNMAPPED" : "");
+    const mapping =
+      sp.get("mapping") ||
+      (sp.get("unmapped_only") === "true" ? "UNMAPPED" : "");
     const sortBy = sp.get("sort_by") || "equipment_no";
     const sortDir = sp.get("sort_dir") === "desc" ? -1 : 1;
     const page = Math.max(Number(sp.get("page") || 1), 1);
-    const pageSize = Math.min(Math.max(Number(sp.get("page_size") || 25), 1), 100);
+    const pageSize = Math.min(
+      Math.max(Number(sp.get("page_size") || 25), 1),
+      100,
+    );
 
     let items = getEnrichedEquipment(false).map((e) => ({
       ...e,
@@ -30,7 +39,7 @@ async function handleGET(req: NextRequest) {
         ? `${e.active_parent_kind}: ${e.active_parent_no}`
         : "Belum Termapping",
       child_count: state.equipment_relationships.filter(
-        (r) => r.parent_equipment_id === e.id && r.valid_to === null
+        (r) => r.parent_equipment_id === e.id && r.valid_to === null,
       ).length,
     }));
 
@@ -41,7 +50,7 @@ async function handleGET(req: NextRequest) {
           e.name.toLowerCase().includes(q) ||
           (e.specification || "").toLowerCase().includes(q) ||
           (e.serial_no && e.serial_no.toLowerCase().includes(q)) ||
-          (e.root_asset_no && e.root_asset_no.toLowerCase().includes(q))
+          (e.root_asset_no && e.root_asset_no.toLowerCase().includes(q)),
       );
     }
     if (kind) {
@@ -63,8 +72,12 @@ async function handleGET(req: NextRequest) {
     }
 
     items.sort((a, b) => {
-      const av = String((a as unknown as Record<string, unknown>)[sortBy] ?? "");
-      const bv = String((b as unknown as Record<string, unknown>)[sortBy] ?? "");
+      const av = String(
+        (a as unknown as Record<string, unknown>)[sortBy] ?? "",
+      );
+      const bv = String(
+        (b as unknown as Record<string, unknown>)[sortBy] ?? "",
+      );
       return av.localeCompare(bv, undefined, { numeric: true }) * sortDir;
     });
 
@@ -80,8 +93,10 @@ async function handleGET(req: NextRequest) {
         total_pages: Math.max(Math.ceil(total / pageSize), 1),
       },
       references: {
-        equipment_categories: state.equipment_categories,
-        locations: state.locations,
+        equipment_categories: state.equipment_categories.filter(
+          (r) => r.is_active,
+        ),
+        locations: state.locations.filter((r) => r.is_active),
       },
     });
   } catch (err) {
@@ -100,7 +115,7 @@ async function handlePOST(req: NextRequest) {
         "VALIDATION",
         parsed.error.issues.map((i) => i.message).join("; "),
         400,
-        { issues: parsed.error.issues }
+        { issues: parsed.error.issues },
       );
     }
     const created = createEquipment(profile, parsed.data);

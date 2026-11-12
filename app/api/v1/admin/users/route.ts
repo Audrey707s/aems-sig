@@ -13,7 +13,7 @@ async function handleGET() {
       throw new AemsError(
         "FORBIDDEN",
         "Hanya Administrator yang memiliki wewenang melihat daftar manajemen pengguna.",
-        403
+        403,
       );
     }
     const state = getAemsState();
@@ -27,11 +27,31 @@ async function handleGET() {
 async function handlePOST(req: NextRequest) {
   try {
     const profile = await getCurrentProfile();
-    const parsed = z.object({id: z.string().uuid(), email: z.string().email(), full_name: z.string().trim().min(2).max(120), department: z.string().trim().max(120).nullable().optional(), role: z.enum(["ACCOUNTING", "MAINTENANCE", "ADMIN"]).nullable(), is_active: z.boolean()}).safeParse(await req.json());
-    if (!parsed.success) throw new AemsError("VALIDATION", "Data pengguna atau jenis akun tidak valid.", 400);
+    const parsed = z
+      .object({
+        id: z.string().uuid(),
+        email: z.string().email(),
+        full_name: z.string().trim().min(2).max(120),
+        department: z.string().trim().max(120).nullable().optional(),
+        role: z.enum(["ACCOUNTING", "MAINTENANCE", "ADMIN"]).nullable(),
+        account_level: z.enum(["MANAGER", "STAFF"]).optional(),
+        manager_id: z.string().uuid().nullable().optional(),
+        expected_updated_at: z.string().datetime().optional(),
+        is_active: z.boolean(),
+      })
+      .safeParse(await req.json());
+    if (!parsed.success)
+      throw new AemsError(
+        "VALIDATION",
+        "Data pengguna atau jenis akun tidak valid.",
+        400,
+      );
     const body = parsed.data;
     const updated = manageUserProfile(profile, {
       id: body.id,
+      account_level: body.account_level,
+      manager_id: body.manager_id,
+      expected_updated_at: body.expected_updated_at,
       email: String(body.email || ""),
       full_name: String(body.full_name || ""),
       role: body.role ?? null,
