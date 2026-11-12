@@ -4,6 +4,12 @@
 
 import { z } from "zod";
 
+export const equipmentConditionSchema = z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "DALAM_PERBAIKAN", "TIDAK_DIKETAHUI"]);
+const attributesSchema = z.record(z.unknown()).superRefine((value, ctx) => {
+  if (value.physical_condition !== undefined && !equipmentConditionSchema.safeParse(value.physical_condition).success) ctx.addIssue({code: "custom", message: "Kondisi fisik aset tidak valid."});
+});
+const optionalDate = z.string().date("Tanggal harus berupa tanggal kalender yang valid (YYYY-MM-DD).").nullable().optional();
+
 export const createAssetSchema = z.object({
   company_code: z.string().trim().min(1, "Company code wajib diisi").default("MAIN"),
   sap_asset_no: z.string().trim().min(1, "Nomor aset SAP wajib diisi"),
@@ -13,20 +19,20 @@ export const createAssetSchema = z.object({
   asset_category_id: z.string().uuid().nullable().optional(),
   location_id: z.string().uuid().nullable().optional(),
   cost_center: z.string().trim().nullable().optional(),
-  acquisition_date: z.string().trim().nullable().optional(),
+  acquisition_date: optionalDate,
   acquisition_value: z.number().nonnegative("Nilai perolehan tidak boleh negatif").nullable().optional(),
   currency: z.string().trim().length(3).default("IDR"),
   serial_no: z.string().trim().nullable().optional(),
   manufacturer: z.string().trim().nullable().optional(),
   model: z.string().trim().nullable().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "DISPOSED"]).default("ACTIVE"),
-  attributes: z.record(z.unknown()).optional().default({}),
+  attributes: attributesSchema.optional().default({}),
 });
 
 export const updateAssetSchema = createAssetSchema.partial().extend({
   row_version: z.number().int().positive("row_version wajib disertakan untuk kontrol konkurensi"),
-  change_reason: z.string().trim().optional(),
-});
+  change_reason: z.string().trim().max(1000).optional(),
+}).strict();
 
 export const softDeleteSchema = z.object({
   reason: z.string().trim().min(3, "Alasan penonaktifan wajib diisi (minimal 3 karakter)"),
@@ -47,15 +53,15 @@ export const createEquipmentSchema = z.object({
     .enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "DALAM_PERBAIKAN", "TIDAK_DIKETAHUI"])
     .default("BAIK"),
   location_id: z.string().uuid().nullable().optional(),
-  install_date: z.string().trim().nullable().optional(),
+  install_date: optionalDate,
   status: z.enum(["ACTIVE", "INACTIVE", "RETIRED"]).default("ACTIVE"),
-  attributes: z.record(z.unknown()).optional().default({}),
+  attributes: attributesSchema.optional().default({}),
 });
 
 export const updateEquipmentSchema = createEquipmentSchema.partial().extend({
   row_version: z.number().int().positive("row_version wajib disertakan untuk kontrol konkurensi"),
-  change_reason: z.string().trim().optional(),
-});
+  change_reason: z.string().trim().max(1000).optional(),
+}).strict();
 
 export const createSpecItemSchema = z.object({
   asset_id: z.string().uuid().nullable().optional(),

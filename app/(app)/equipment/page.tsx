@@ -270,6 +270,7 @@ function EquipmentContent() {
                         <span>Detail</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
+                      {can("equipment:write") && <Link href={`/equipment/${eq.id}?edit=1`} className="ml-3 inline-flex rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-xs font-semibold text-[#1A3263]">Ubah</Link>}
                     </td>
                   </tr>
                 ))

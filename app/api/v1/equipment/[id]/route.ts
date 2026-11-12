@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -9,9 +10,10 @@ import {
   promoteSpecItemToEquipment,
   softDeleteEquipment,
   updateEquipment,
+  updateEquipmentSpecItem,
 } from "@/lib/db/store";
 import { AemsError, formatErrorResponse } from "@/lib/utils/errors";
-import { softDeleteSchema, updateEquipmentSchema } from "@/lib/utils/schemas";
+import { createSpecItemSchema, softDeleteSchema, updateEquipmentSchema } from "@/lib/utils/schemas";
 
 async function handleGET(
   _req: NextRequest,
@@ -59,6 +61,8 @@ async function handleGET(
         direct_children: children,
         specs: specItems,
         history: movementHistory,
+        audit_logs: auditLogs,
+        references: {categories: state.equipment_categories, locations: state.locations},
       },
       breadcrumb,
       children,
@@ -82,16 +86,22 @@ async function handlePOST(
     const body = await req.json();
 
     if (body.action === "ADD_SPEC") {
-      const created = addEquipmentSpecItem(profile, {
-        equipment_id: id,
-        spec_name: String(body.spec_name || ""),
-        spec_value: String(body.spec_value || ""),
-        spec_group: body.spec_group ? String(body.spec_group) : "General",
-      });
+      const parsed = createSpecItemSchema.safeParse({...body, action: undefined, equipment_id: id});
+      if (!parsed.success) throw new AemsError("VALIDATION", parsed.error.issues[0].message);
+      if (!getAemsState().equipment.some(e => e.id === id && !e.deleted_at)) throw new AemsError("NOT_FOUND", "Equipment tidak ditemukan.", 404);
+      const created = addEquipmentSpecItem(profile, parsed.data);
       return NextResponse.json({ data: created }, { status: 201 });
     }
 
+    if (body.action === "UPDATE_SPEC") {
+      const values = createSpecItemSchema.pick({spec_name: true, spec_value: true, spec_group: true, quantity: true, serial_no: true}).required({spec_group: true, serial_no: true}).strict();
+      const parsed = z.object({action: z.literal("UPDATE_SPEC"), spec_item_id: z.string().uuid(), values, expected: values}).strict().safeParse(body);
+      if (!parsed.success) throw new AemsError("VALIDATION", parsed.error.issues[0].message);
+      return NextResponse.json({data: updateEquipmentSpecItem(profile, id, parsed.data.spec_item_id, parsed.data.values, parsed.data.expected)});
+    }
+
     if (body.action === "PROMOTE_SPEC") {
+      if (!getAemsState().equipment_spec_items.some(s => s.id === body.spec_item_id && s.equipment_id === id)) throw new AemsError("NOT_FOUND", "Spesifikasi equipment tidak ditemukan.", 404);
       const promoted = promoteSpecItemToEquipment(profile, {
         spec_item_id: String(body.spec_item_id || ""),
         equipment_no: String(body.equipment_no || ""),

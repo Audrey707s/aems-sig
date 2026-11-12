@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createInitialSeedState } from "@/lib/db/seed-data";
 import { aemsRequestState } from "@/lib/db/context";
-import { submitMappingRequest, decideMappingRequest, createAndValidateImportBatch, commitImportBatch, createAsset, getAemsState, resetAemsState } from "@/lib/db/store";
+import { submitMappingRequest, decideMappingRequest, createAndValidateImportBatch, commitImportBatch, updateEquipment, updateAsset, createAsset, getAemsState, resetAemsState } from "@/lib/db/store";
 import {
   databaseDiff, flattenDatabase, hydrateDatabase, runPersistedOperation,
   type DatabaseRows, type PersistenceDriver, type DatabaseChanges,
@@ -159,6 +159,24 @@ describe("Persistent request repository", () => {
       expect(getAemsState().assets.some(a => a.sap_asset_no === "UAT-IMPORT-PERSIST")).toBe(true);
       expect(getAemsState().import_batches.find(b => b.id === batchId)?.status).toBe("COMPLETED");
       return Response.json({ok: true});
+    });
+  });
+
+  it("persists edited condition, asset attributes and audit in a new request", async () => {
+    await runPersistedOperation(db.client(), async () => {
+      const state=getAemsState(), admin=state.profiles.find(p=>p.role==="ADMIN")!;
+      updateEquipment(admin,state.equipment[0].id,{condition:"DALAM_PERBAIKAN",manufacturer:"Edited maker",row_version:state.equipment[0].row_version});
+      updateAsset(admin,state.assets[0].id,{attributes:{physical_condition:"RUSAK_RINGAN"},row_version:state.assets[0].row_version});
+      return Response.json({ok:true});
+    });
+    resetAemsState();
+    await runPersistedOperation(db.client(),async()=>{
+      const state=getAemsState();
+      expect(state.equipment[0].condition).toBe("DALAM_PERBAIKAN");
+      expect(state.equipment[0].manufacturer).toBe("Edited maker");
+      expect(state.assets[0].attributes.physical_condition).toBe("RUSAK_RINGAN");
+      expect(state.audit_logs.some(a=>a.action==="UPDATE"&&a.changed_fields.includes("condition"))).toBe(true);
+      return Response.json({ok:true});
     });
   });
 

@@ -1,17 +1,20 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Trash2, GitBranch, AlertTriangle, Edit3 } from "lucide-react";
 import { HierarchyTree } from "@/components/hierarchy/HierarchyTree";
 import { HierarchyNode } from "@/lib/types/domain";
+import { MasterEditForm } from "@/components/master/MasterEditForm";
 import { useAuth } from "@/components/ui/AppShell";
 
 export default function AssetDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const searchParams = useSearchParams();
+  const [success, setSuccess] = useState("");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [detail, setDetail] = useState<any>(null);
@@ -20,9 +23,7 @@ export default function AssetDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editStatus, setEditStatus] = useState("ACTIVE");
+  const [editing, setEditing] = useState(searchParams.get("edit") === "1");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -38,8 +39,6 @@ export default function AssetDetailPage() {
       if (!resAsset.ok || !resTree.ok) throw new Error(jsonAsset.error?.message || jsonTree.error?.message || "Detail aset gagal dimuat.");
       if (jsonAsset.data) {
         setDetail(jsonAsset.data);
-        setEditName(jsonAsset.data.asset.name);
-        setEditStatus(jsonAsset.data.asset.status);
       }
       if (jsonTree.data) {
         setTree(jsonTree.data);
@@ -54,27 +53,6 @@ export default function AssetDetailPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    const res = await fetch(`/api/v1/assets/${params.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editName,
-        status: editStatus,
-        row_version: detail.asset.row_version,
-      }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setErrorMsg(json.error?.message || "Gagal memperbarui aset.");
-      return;
-    }
-    setEditing(false);
-    loadData();
-  };
 
   const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +85,7 @@ export default function AssetDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
             href="/assets"
@@ -116,7 +94,7 @@ export default function AssetDetailPage() {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
                 {asset.sap_asset_no} (Sub {asset.sap_sub_no})
               </span>
@@ -128,7 +106,7 @@ export default function AssetDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/mapping?assetId=${asset.id}`}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#547792]/40 bg-white text-xs font-bold text-[#1A3263] hover:bg-[#F6F4F0]"
@@ -169,40 +147,8 @@ export default function AssetDetailPage() {
         </div>
       )}
 
-      {editing && (
-        <form
-          onSubmit={handleUpdate}
-          className="p-4 rounded-xl bg-white border border-[#E8E2DB] flex flex-wrap items-end gap-4 text-xs"
-        >
-          <div className="flex-1 min-w-[220px]">
-            <label className="block font-semibold text-[#1A3263] mb-1">Nama Aset</label>
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-[#1A3263] mb-1">Status Siklus Hidup</label>
-            <select
-              value={editStatus}
-              onChange={(e) => setEditStatus(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-[#E8E2DB] bg-white text-[#1A3263]"
-            >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-              <option value="DISPOSED">DISPOSED</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg bg-[#1A3263] text-white font-bold"
-          >
-            Simpan Perubahan
-          </button>
-        </form>
-      )}
+      {success && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
+      {editing && can("asset:write") && <MasterEditForm kind="asset" item={asset} references={detail.references} isAdmin={user?.role === "ADMIN"} onCancel={()=>setEditing(false)} onReload={async()=>{setEditing(false);await loadData();}} onSaved={async()=>{setEditing(false);await loadData();setSuccess("Perubahan aset berhasil disimpan.");}}/>}
 
       {/* Asset Metadata Card & Tree */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -211,6 +157,10 @@ export default function AssetDetailPage() {
             Informasi Induk Aset SAP
           </h2>
           <div className="grid grid-cols-2 gap-y-2.5">
+            <span className="text-[#547792]">Kondisi fisik:</span>
+            <span>{String(asset.attributes?.physical_condition || "TIDAK_DIKETAHUI").replaceAll("_", " ")}</span>
+            <span className="text-[#547792]">Deskripsi:</span>
+            <span>{asset.description || "-"}</span>
             <span className="text-[#547792]">Company Code:</span>
             <span className="font-mono font-bold text-[#1A3263]">{asset.company_code}</span>
             <span className="text-[#547792]">Business Key:</span>
