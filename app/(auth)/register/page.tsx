@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
+import { AuthCard, authButtonClass, authInputClass, authLinkClass } from "@/components/auth/AuthCard";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -21,18 +21,15 @@ export default function RegisterPage() {
     } catch {setFeedback({ok: false, message: "Koneksi terputus. Silakan coba kembali."});}
     finally {setBusy(false);}
   };
-  return <main className="flex min-h-screen items-center justify-center bg-[#F6F4F0] p-4">
-    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E8E2DB] bg-white shadow-xl">
-      <header className="border-b-4 border-[#FAB95B] bg-[#1A3263] p-6 text-white"><div className="inline-flex rounded-lg bg-white p-2"><Image src="/logo-aems.png" alt="AEMS" width={140} height={40} className="h-8 w-auto" /></div><h1 className="mt-4 text-xl font-bold">Daftar Akun</h1></header>
-      <form onSubmit={submit} className="space-y-4 p-6">
-        {feedback && <p role="status" className={`rounded-lg p-3 text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{feedback.message}</p>}
-        <label className="block text-sm font-semibold">Nama lengkap<input required minLength={2} maxLength={120} autoComplete="name" value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})} className="mt-1 w-full rounded-lg border p-2.5 font-normal" /></label>
-        <label className="block text-sm font-semibold">Email<input required type="email" autoComplete="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="mt-1 w-full rounded-lg border p-2.5 font-normal" /></label>
-        <label className="block text-sm font-semibold">Kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className="mt-1 w-full rounded-lg border p-2.5 font-normal" /></label>
-        <label className="block text-sm font-semibold">Konfirmasi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className="mt-1 w-full rounded-lg border p-2.5 font-normal" /></label>
-        <button disabled={busy} className="w-full rounded-lg bg-[#1A3263] p-2.5 text-sm font-bold text-white">{busy ? "Mendaftarkan..." : "Daftar"}</button>
-        <Link href="/login" className="block text-center text-sm font-semibold underline">Sudah punya akun? Masuk</Link>
+  return <AuthCard title="Daftar Akun">
+      <form onSubmit={submit} className="space-y-4" aria-busy={busy}>
+        {feedback && <p role={feedback.ok ? "status" : "alert"} className={`rounded-lg p-3 text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{feedback.message}</p>}
+        <label className="block text-sm font-medium">Nama lengkap<input required minLength={2} maxLength={120} autoComplete="name" value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})} className={authInputClass} /></label>
+        <label className="block text-sm font-medium">Email<input required type="email" autoComplete="email" maxLength={254} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className={authInputClass} /></label>
+        <label className="block text-sm font-medium">Kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className={authInputClass} /></label>
+        <label className="block text-sm font-medium">Konfirmasi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
+        <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar Akun"}</button>
+        <p className="pt-2 text-center text-sm text-slate-500">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
       </form>
-    </div>
-  </main>;
+  </AuthCard>;
 }

@@ -66,3 +66,12 @@ Pengguna mendaftar melalui `/register` memakai nama, email, dan password sendiri
 Ganti Password tersedia di Profil dan halaman menunggu penetapan. Server memverifikasi password lama melalui Supabase Auth, memeriksa perbedaan dan konfirmasi password baru, lalu memperbarui identitas pengguna yang sedang login. Password tidak disimpan di tabel aplikasi, log, atau audit. Sesi lain ditutup setelah perubahan. Admin aktif terakhir dilindungi di server dan trigger database.
 
 Jalankan juga migrasi `20261112021715_personal_account_registration.sql`. Jika konfirmasi email diaktifkan pada Supabase, konfigurasi Site URL dan allowlist redirect untuk domain deployment dan `/auth/callback`; aplikasi mendukung callback PKCE serta konfirmasi token hash. Gunakan pengaturan pengiriman email yang tersedia pada proyek, tanpa menonaktifkan verifikasi secara otomatis.
+
+
+## Login dan pemulihan password
+
+Login, Daftar Akun, Lupa Password, dan Atur Ulang Password memakai komponen `AuthCard` yang sama. Halaman login tidak menampilkan email contoh atau pilihan jenis akun; jenis akun ditetapkan admin setelah pendaftaran.
+
+Alur `/forgot-password` mengirim email melalui Supabase Auth (mengikuti batas pengiriman Supabase). Tambahkan `https://aems-sig.vercel.app/auth/recovery` ke Redirect URLs. Callback PKCE menukar kode satu kali; template recovery khusus juga dapat menggunakan `{{ .SiteURL }}/auth/recovery?token_hash={{ .TokenHash }}&type=recovery`. Jangan menambahkan redirect bebas dari input pengguna. Bukti pemulihan ditandatangani server, berlaku 10 menit, memakai cookie HttpOnly, dan terikat ID serta versi identitas pengguna. Login biasa tidak cukup untuk memakai endpoint reset. Setelah password berubah, bukti versi lama ditolak dan sesi ditutup.
+
+Untuk email ke pengguna umum, pasang custom SMTP pada **Supabase AEMS → Authentication → Emails → SMTP Settings**. Siapkan host, port, username, password/API key SMTP dan alamat pengirim yang telah diverifikasi oleh penyedia email. Masukkan rahasia langsung melalui dashboard, bukan source code, chat, PR, atau log. Verifikasi email tetap aktif. Konfigurasi SMTP dan pengiriman email nyata tidak dapat dianggap selesai hanya dari build/test aplikasi.
