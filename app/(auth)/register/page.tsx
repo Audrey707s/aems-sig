@@ -21,15 +21,15 @@ export default function RegisterPage() {
     } catch {setFeedback({ok: false, message: "Koneksi terputus. Silakan coba kembali."});}
     finally {setBusy(false);}
   };
-  return <AuthCard title="Daftar Akun">
+  return <AuthCard title="Daftar akun">
       <form onSubmit={submit} className="space-y-4" aria-busy={busy}>
         {feedback && <p role={feedback.ok ? "status" : "alert"} className={`rounded-lg p-3 text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{feedback.message}</p>}
-        <label className="block text-sm font-medium">Nama lengkap<input required minLength={2} maxLength={120} autoComplete="name" value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})} className={authInputClass} /></label>
+        <label className="block text-sm font-medium">Nama<input required minLength={2} maxLength={120} autoComplete="name" value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})} className={authInputClass} /></label>
         <label className="block text-sm font-medium">Email<input required type="email" autoComplete="email" maxLength={254} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className={authInputClass} /></label>
         <label className="block text-sm font-medium">Kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className={authInputClass} /></label>
-        <label className="block text-sm font-medium">Konfirmasi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
-        <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar Akun"}</button>
-        <p className="pt-2 text-center text-sm text-slate-500">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
+        <label className="block text-sm font-medium">Ulangi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
+        <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar"}</button>
       </form>
+      <p className="mt-5 text-center text-sm text-slate-600">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
   </AuthCard>;
 }

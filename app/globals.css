@@ -71,3 +71,16 @@ main tbody tr { transition: background-color 120ms ease; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Authentication matches the measured ATM layout; keep the application font unchanged. */
+@font-face {
+  font-family: "AEMS Auth Inter";
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+.aems-auth-page,
+.aems-auth-page h1 {
+  font-family: "AEMS Auth Inter", Inter, system-ui, -apple-system, sans-serif;
+}
