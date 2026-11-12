@@ -1,153 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, ArrowRight } from "lucide-react";
-import { AppRole } from "@/lib/types/domain";
+import { AuthCard, authButtonClass, authInputClass, authLinkClass } from "@/components/auth/AuthCard";
 
 export default function LoginPage() {
   const router = useRouter();
-  const demoControlsEnabled = process.env.NEXT_PUBLIC_AEMS_DEMO_MODE === "true";
   const [error, setError] = useState("");
-  const [selectedRole, setSelectedRole] = useState<AppRole>("ADMIN");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  useEffect(() => { if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan konfirmasi tidak berlaku atau sudah kedaluwarsa. Silakan coba login atau daftar kembali."); }, []);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan konfirmasi tidak berlaku atau sudah kedaluwarsa. Silakan coba kembali.");
+  }, []);
 
-  const handleRolePreset = (role: AppRole) => {
-    setSelectedRole(role);
-    if (role === "ADMIN") setEmail("admin@aems.co.id");
-    if (role === "ACCOUNTING") setEmail("accounting@aems.co.id");
-    if (role === "MAINTENANCE") setEmail("maintenance@aems.co.id");
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault(); if (loading) return;
+    setLoading(true); setError("");
     try {
-      const response = await fetch("/api/v1/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoControlsEnabled ? { role: selectedRole } : { email, password }),
-      });
+      const response = await fetch("/api/v1/auth/session", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email, password})});
       const body = await response.json();
-      if (!response.ok) { setError(body.error?.message || "Login gagal. Silakan coba kembali."); return; }
-      router.push(body.redirect || "/dashboard");
-      router.refresh();
-    } catch { setError("Tidak dapat terhubung. Periksa koneksi dan coba kembali."); } finally {
-      setLoading(false);
-    }
+      if (!response.ok) {setError(body.error?.message || "Login gagal. Silakan coba kembali."); return;}
+      setPassword(""); router.push(body.redirect || "/dashboard"); router.refresh();
+    } catch {setError("Tidak dapat terhubung. Periksa koneksi dan coba kembali.");}
+    finally {setLoading(false);}
   };
 
-  return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-[#F6F4F0] p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#E8E2DB] overflow-hidden">
-        {/* Top Header Banner with Official Logo */}
-        <div className="bg-[#1A3263] px-6 py-7 text-white border-b-4 border-[#FAB95B]">
-          <div className="flex items-center gap-4">
-            <div className="bg-white rounded-xl px-3.5 py-2 shadow-sm border border-[#E8E2DB]">
-              <Image
-                src="/logo-aems.png"
-                width={140}
-                height={40}
-                alt="AEMS Logo"
-                className="h-9 w-auto object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white">
-                Asset &amp; Equipment Management
-              </h1>
-              <p className="text-xs text-[#E8E2DB]/90 mt-0.5">
-                Enterprise Asset &amp; Technical Hierarchy System
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Form Body */}
-        {error && <div role="alert" className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-        <form onSubmit={handleLogin} className="p-6 space-y-5">
-          {demoControlsEnabled && <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#547792] mb-2">
-              Pilih Profil Akses
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(
-                [
-                  { role: "ADMIN", label: "Admin" },
-                  { role: "ACCOUNTING", label: "Accounting" },
-                  { role: "MAINTENANCE", label: "Maintenance" },
-                ] as const
-              ).map((item) => (
-                <button
-                  key={item.role}
-                  type="button"
-                  onClick={() => handleRolePreset(item.role)}
-                  className={`py-2.5 px-3 rounded-lg text-xs font-bold border transition ${
-                    selectedRole === item.role
-                      ? "bg-[#1A3263] text-[#FAB95B] border-[#1A3263] shadow-sm"
-                      : "bg-[#F6F4F0] text-[#1A3263] border-[#E8E2DB] hover:bg-[#E8E2DB]/60"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>}
-
-          <div>
-            <label htmlFor="login-email" className="block text-xs font-semibold text-[#1A3263] mb-1">
-              Email
-            </label>
-            <input
-              id="login-email"
-              autoComplete="username"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2DB] text-sm text-[#1A3263] bg-white focus:ring-2 focus:ring-[#547792] focus:border-[#1A3263] outline-none"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="login-password" className="block text-xs font-semibold text-[#1A3263] mb-1">
-              Kata Sandi
-            </label>
-            <input
-              id="login-password"
-              autoComplete="current-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2DB] text-sm text-[#1A3263] bg-white focus:ring-2 focus:ring-[#547792] focus:border-[#1A3263] outline-none"
-            />
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-[#F6F4F0] border border-[#E8E2DB] flex items-start gap-2.5 text-xs text-[#547792]">
-            <ShieldCheck className="w-4 h-4 text-[#1A3263] shrink-0 mt-0.5" />
-            <div>
-              Akses aplikasi dilindungi kendali otorisasi berbasis peran serta pencatatan riwayat perubahan terpusat.
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition"
-          >
-            <span>{loading ? "Memproses..." : "Masuk ke Aplikasi"}</span>
-            <ArrowRight className="w-4 h-4 text-[#FAB95B]" />
-          </button>
-          <Link href="/register" className="block text-center text-sm font-semibold underline">Belum punya akun? Daftar</Link>
-        </form>
-      </div>
-    </div>
-  );
+  return <AuthCard title="Masuk">
+    <form onSubmit={handleLogin} className="space-y-5" aria-busy={loading}>
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      <label className="block text-sm font-medium">Email<input autoComplete="username" type="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} className={authInputClass} /></label>
+      <label className="block text-sm font-medium">Kata sandi<input autoComplete="current-password" type="password" required value={password} onChange={e=>setPassword(e.target.value)} className={authInputClass} /></label>
+      <div className="text-right text-sm"><Link href="/forgot-password" className={authLinkClass}>Lupa password?</Link></div>
+      <button type="submit" disabled={loading} className={authButtonClass}>{loading ? "Memproses..." : "Masuk"}</button>
+      <p className="pt-2 text-center text-sm text-slate-500">Belum punya akun? <Link href="/register" className={authLinkClass}>Daftar akun</Link></p>
+    </form>
+  </AuthCard>;
 }
