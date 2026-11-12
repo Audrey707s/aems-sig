@@ -47,6 +47,7 @@ async function handleGET(
       data: {
         ...asset,
         asset,
+        references: {categories: state.asset_categories, locations: state.locations},
         category_name: asset.category_name,
         location_name: asset.location_name,
         direct_equipment: directEquipment,

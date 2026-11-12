@@ -549,6 +549,12 @@ export function createAsset(
   return newAsset;
 }
 
+function validateMasterReferences(state: AemsDatabaseState, locationId: string | null | undefined, categoryId: string | null | undefined, kind: "asset" | "equipment") {
+  if (locationId && !state.locations.some(l => l.id === locationId)) throw new AemsError("VALIDATION", "Lokasi tidak ditemukan.");
+  const categories = kind === "asset" ? state.asset_categories : state.equipment_categories;
+  if (categoryId && !categories.some(c => c.id === categoryId)) throw new AemsError("VALIDATION", "Kategori tidak ditemukan.");
+}
+
 export function updateAsset(
   actor: Profile,
   assetId: string,
@@ -589,43 +595,16 @@ export function updateAsset(
     );
   }
 
-  // BR-ID-06: Business key modification only allowed for ADMIN with reason
-  if (
-    input.sap_asset_no !== undefined &&
-    normalizeKey(input.sap_asset_no) !== asset.asset_key_norm
-  ) {
-    if (actor.role !== "ADMIN") {
-      throw new AemsError(
-        "FORBIDDEN",
-        "Perubahan nomor aset SAP hanya diizinkan untuk Administrator.",
-        403
-      );
-    }
-    if (!input.change_reason || input.change_reason.trim().length < 3) {
-      throw new AemsError(
-        "VALIDATION",
-        "Alasan perubahan nomor aset SAP wajib diisi.",
-        400
-      );
-    }
-    const newNorm = normalizeKey(input.sap_asset_no);
-    const conflict = state.assets.find(
-      (a) =>
-        a.id !== asset.id &&
-        a.company_code === asset.company_code &&
-        a.asset_key_norm === newNorm &&
-        a.sap_sub_no === asset.sap_sub_no
-    );
-    if (conflict) {
-      throw new AemsError(
-        "DUPLICATE_KEY",
-        `Nomor aset SAP '${input.sap_asset_no}' sudah digunakan oleh aset lain.`,
-        409
-      );
-    }
-    asset.sap_asset_no = input.sap_asset_no.trim();
-    asset.asset_key_norm = newNorm;
+  const nextCompany = input.company_code?.trim() ?? asset.company_code;
+  const nextNumber = input.sap_asset_no?.trim() ?? asset.sap_asset_no;
+  const nextSub = input.sap_sub_no?.trim() ?? asset.sap_sub_no;
+  const identityChanged = nextCompany !== asset.company_code || nextNumber !== asset.sap_asset_no || nextSub !== asset.sap_sub_no;
+  if (identityChanged) {
+    if (actor.role !== "ADMIN") throw new AemsError("FORBIDDEN", "Perubahan nomor aset SAP, company code, dan sub-nomor hanya diizinkan untuk Administrator.", 403);
+    if (!input.change_reason || input.change_reason.trim().length < 3) throw new AemsError("VALIDATION", "Alasan perubahan identitas aset wajib diisi.");
+    if (state.assets.some(a => a.id !== asset.id && a.company_code === nextCompany && a.sap_sub_no === nextSub && a.asset_key_norm === normalizeKey(nextNumber))) throw new AemsError("DUPLICATE_KEY", "Kombinasi nomor aset SAP, company code, dan sub-nomor sudah digunakan.", 409);
   }
+  validateMasterReferences(state, input.location_id, input.asset_category_id, "asset");
 
   // BR-DL-02: Cannot set status to INACTIVE/DISPOSED if asset still has active equipment
   if (input.status && input.status !== "ACTIVE" && asset.status === "ACTIVE") {
@@ -647,6 +626,10 @@ export function updateAsset(
   const changedFields: string[] = [];
 
   const updatableFields = [
+    "company_code",
+    "sap_asset_no",
+    "sap_sub_no",
+    "attributes",
     "name",
     "description",
     "asset_category_id",
@@ -670,11 +653,13 @@ export function updateAsset(
     }
   }
 
+  asset.asset_key_norm = normalizeKey(asset.sap_asset_no);
   asset.row_version += 1;
   asset.updated_at = new Date().toISOString();
   asset.updated_by = actor.id;
 
   if (changedFields.length > 0) {
+    if (input.change_reason) newValues.change_reason = input.change_reason;
     appendAuditLog(
       state,
       actor,
@@ -899,42 +884,15 @@ export function updateEquipment(
     );
   }
 
-  // BR-ID-06: Business key change only by ADMIN
-  if (
-    input.equipment_no !== undefined &&
-    normalizeKey(input.equipment_no) !== eq.equipment_key_norm
-  ) {
-    if (actor.role !== "ADMIN") {
-      throw new AemsError(
-        "FORBIDDEN",
-        "Perubahan nomor equipment hanya diizinkan untuk Administrator.",
-        403
-      );
-    }
-    if (!input.change_reason || input.change_reason.trim().length < 3) {
-      throw new AemsError(
-        "VALIDATION",
-        "Alasan perubahan nomor equipment wajib diisi.",
-        400
-      );
-    }
-    const newNorm = normalizeKey(input.equipment_no);
-    const conflict = state.equipment.find(
-      (e) =>
-        e.id !== eq.id &&
-        e.source_system === eq.source_system &&
-        e.equipment_key_norm === newNorm
-    );
-    if (conflict) {
-      throw new AemsError(
-        "DUPLICATE_KEY",
-        `Nomor equipment '${input.equipment_no}' sudah digunakan.`,
-        409
-      );
-    }
-    eq.equipment_no = input.equipment_no.trim();
-    eq.equipment_key_norm = newNorm;
+  const nextSource = input.source_system?.trim() ?? eq.source_system;
+  const nextNumber = input.equipment_no?.trim() ?? eq.equipment_no;
+  const identityChanged = nextSource !== eq.source_system || nextNumber !== eq.equipment_no;
+  if (identityChanged) {
+    if (actor.role !== "ADMIN") throw new AemsError("FORBIDDEN", "Perubahan nomor equipment dan source system hanya diizinkan untuk Administrator.", 403);
+    if (!input.change_reason || input.change_reason.trim().length < 3) throw new AemsError("VALIDATION", "Alasan perubahan identitas equipment wajib diisi.");
+    if (state.equipment.some(e => e.id !== eq.id && e.source_system === nextSource && e.equipment_key_norm === normalizeKey(nextNumber))) throw new AemsError("DUPLICATE_KEY", "Kombinasi nomor equipment dan source system sudah digunakan.", 409);
   }
+  validateMasterReferences(state, input.location_id, input.equipment_category_id, "equipment");
 
   // BR-DL-03: Cannot deactivate if active children exist
   if (input.status && input.status !== "ACTIVE" && eq.status === "ACTIVE") {
@@ -956,6 +914,9 @@ export function updateEquipment(
   const changedFields: string[] = [];
 
   const updatableFields = [
+    "source_system",
+    "equipment_no",
+    "attributes",
     "kind",
     "name",
     "specification",
@@ -978,11 +939,13 @@ export function updateEquipment(
     }
   }
 
+  eq.equipment_key_norm = normalizeKey(eq.equipment_no);
   eq.row_version += 1;
   eq.updated_at = new Date().toISOString();
   eq.updated_by = actor.id;
 
   if (changedFields.length > 0) {
+    if (input.change_reason) newValues.change_reason = input.change_reason;
     appendAuditLog(
       state,
       actor,
@@ -1180,6 +1143,23 @@ export function addEquipmentSpecItem(
     ["spec_name", "spec_value"]
   );
 
+  return item;
+}
+
+export function updateEquipmentSpecItem(actor: Profile, equipmentId: string, itemId: string, input: Pick<EquipmentSpecItem, "spec_name" | "spec_value" | "spec_group" | "quantity" | "serial_no">, expected: Pick<EquipmentSpecItem, "spec_name" | "spec_value" | "spec_group" | "quantity" | "serial_no">): EquipmentSpecItem {
+  if (!hasPermission(actor, "spec:write")) throw new AemsError("FORBIDDEN", "Anda tidak memiliki wewenang mengubah spesifikasi.", 403);
+  const state = getAemsState();
+  const parent = state.equipment.find(e => e.id === equipmentId && !e.deleted_at);
+  const item = state.equipment_spec_items.find(s => s.id === itemId && s.equipment_id === equipmentId);
+  if (!parent || !item) throw new AemsError("NOT_FOUND", "Spesifikasi equipment tidak ditemukan.", 404);
+  if (item.promoted_equipment_id) throw new AemsError("VALIDATION", "Spesifikasi telah dipromosikan. Ubah data pada equipment hasil promosi.");
+  const fields = ["spec_name", "spec_value", "spec_group", "quantity", "serial_no"] as const;
+  if (fields.some(key => item[key] !== expected[key])) throw new AemsError("VERSION_CONFLICT", "Spesifikasi telah diubah pengguna lain. Muat ulang sebelum menyimpan.", 409);
+  const oldValues: Record<string, unknown> = {}, newValues: Record<string, unknown> = {};
+  const changed = fields.filter(key => item[key] !== input[key]);
+  for (const key of changed) {oldValues[key] = item[key]; newValues[key] = input[key];}
+  Object.assign(item, input);
+  if (changed.length) appendAuditLog(state, actor, "SPEC_ITEM", item.id, item.spec_name, "UPDATE_SPEC", oldValues, newValues, changed);
   return item;
 }
 

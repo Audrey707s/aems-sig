@@ -1,22 +1,29 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Edit3,
   GitBranch,
   Trash2,
   ArrowUpCircle,
   Wrench,
   AlertTriangle,
 } from "lucide-react";
+import { MasterEditForm } from "@/components/master/MasterEditForm";
+import { SpecEditForm } from "@/components/master/SpecEditForm";
 import { useAuth } from "@/components/ui/AppShell";
 
 export default function EquipmentDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { can, user } = useAuth();
+  const searchParams = useSearchParams();
+  const [editing, setEditing] = useState(searchParams.get("edit") === "1");
+  const [editingSpec, setEditingSpec] = useState<string | null>(null);
+  const [success, setSuccess] = useState("");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [detail, setDetail] = useState<any>(null);
@@ -122,7 +129,7 @@ export default function EquipmentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
             href="/equipment"
@@ -131,7 +138,7 @@ export default function EquipmentDetailPage() {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
                 {equipment.equipment_no}
               </span>
@@ -150,7 +157,7 @@ export default function EquipmentDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/mapping?equipmentId=${equipment.id}`}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white text-xs font-bold"
@@ -158,6 +165,7 @@ export default function EquipmentDetailPage() {
             <GitBranch className="w-3.5 h-3.5 text-[#FAB95B]" />
             <span>Pindahkan / Ubah Mapping</span>
           </Link>
+          {can("equipment:write") && <button type="button" onClick={()=>setEditing(v=>!v)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1A3263] px-3.5 py-2 text-xs font-bold text-white"><Edit3 className="h-3.5 w-3.5"/>Ubah Equipment</button>}
           {can("equipment:write") && (
             <button
               type="button"
@@ -181,6 +189,9 @@ export default function EquipmentDetailPage() {
         </div>
       )}
 
+      {success && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
+      {editing && can("equipment:write") && <MasterEditForm kind="equipment" item={equipment} references={detail.references} isAdmin={user?.role==="ADMIN"} onCancel={()=>setEditing(false)} onReload={async()=>{setEditing(false);await loadDetail();}} onSaved={async()=>{setEditing(false);await loadDetail();setSuccess("Perubahan equipment berhasil disimpan.");}}/>}
+
       {/* Main Details & Hierarchy Context */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="p-5 rounded-xl bg-white border border-[#E8E2DB] space-y-3 text-xs shadow-sm">
@@ -188,6 +199,11 @@ export default function EquipmentDetailPage() {
             Identitas &amp; Posisi Hierarki
           </h2>
           <div className="grid grid-cols-2 gap-y-2.5">
+            <span className="text-[#547792]">Status:</span><span>{equipment.status}</span>
+            <span className="text-[#547792]">Kategori:</span><span>{equipment.category_name || "-"}</span>
+            <span className="text-[#547792]">Lokasi:</span><span>{equipment.location_name || "-"}</span>
+            <span className="text-[#547792]">Pabrikan / Model:</span><span>{equipment.manufacturer || "-"} / {equipment.model || "-"}</span>
+            <span className="text-[#547792]">Tanggal pemasangan:</span><span>{equipment.install_date || "-"}</span>
             <span className="text-[#547792]">Source System:</span>
             <span className="font-mono font-bold text-[#1A3263]">{equipment.source_system}</span>
             <span className="text-[#547792]">Nomor Equipment:</span>
@@ -284,6 +300,8 @@ export default function EquipmentDetailPage() {
                   )}
                 </div>
                 <div className="text-[#547792]">{sp.spec_value}</div>
+                {!sp.promoted_equipment_id && can("spec:write") && <button type="button" onClick={()=>setEditingSpec(sp.id)} className="text-xs font-semibold underline">Ubah Spesifikasi</button>}
+                {editingSpec === sp.id && <SpecEditForm item={sp} equipmentId={equipment.id} onCancel={()=>setEditingSpec(null)} onSaved={async()=>{setEditingSpec(null);await loadDetail();setSuccess("Perubahan spesifikasi berhasil disimpan.");}}/>}
               </div>
             ))}
           </div>
