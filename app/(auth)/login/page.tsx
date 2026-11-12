@@ -28,13 +28,12 @@ export default function LoginPage() {
   };
 
   return <AuthCard title="Masuk">
-    <form onSubmit={handleLogin} className="space-y-5" aria-busy={loading}>
+    <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5" aria-busy={loading}>
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <label className="block text-sm font-medium">Email<input autoComplete="username" type="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} className={authInputClass} /></label>
       <label className="block text-sm font-medium">Kata sandi<input autoComplete="current-password" type="password" required value={password} onChange={e=>setPassword(e.target.value)} className={authInputClass} /></label>
-      <div className="text-right text-sm"><Link href="/forgot-password" className={authLinkClass}>Lupa password?</Link></div>
       <button type="submit" disabled={loading} className={authButtonClass}>{loading ? "Memproses..." : "Masuk"}</button>
-      <p className="pt-2 text-center text-sm text-slate-500">Belum punya akun? <Link href="/register" className={authLinkClass}>Daftar akun</Link></p>
     </form>
+    <div className="mt-5 flex flex-wrap justify-center gap-4 text-sm"><Link href="/register" className={authLinkClass}>Daftar akun</Link><Link href="/forgot-password" className={authLinkClass}>Lupa kata sandi?</Link></div>
   </AuthCard>;
 }
