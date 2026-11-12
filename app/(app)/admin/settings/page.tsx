@@ -219,7 +219,7 @@ export default function AdminSettingsPage() {
                 }
               />
               <span>
-                Izinkan peran Maintenance melihat nilai perolehan finansial aset
+                Izinkan peran Equipment melihat nilai perolehan finansial aset
               </span>
             </label>
           </div>

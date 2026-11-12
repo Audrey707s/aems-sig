@@ -3348,6 +3348,13 @@ export function manageUserProfile(
     if (!existing) {
       throw new AemsError("NOT_FOUND", "Profil pengguna tidak ditemukan.", 404);
     }
+    if (existing.role === "ADMIN" && existing.is_active && (input.role !== "ADMIN" || !input.is_active) &&
+        state.profiles.filter(p => p.role === "ADMIN" && p.is_active).length <= 1) {
+      throw new AemsError("FORBIDDEN", "Administrator aktif terakhir tidak dapat dinonaktifkan atau diubah jenis akunnya.", 403);
+    }
+    if (input.role === "ADMIN" && existing.role !== "ADMIN") {
+      throw new AemsError("FORBIDDEN", "Pilih jenis akun Accounting atau Equipment untuk pengguna ini.", 403);
+    }
     const oldVals = {
       role: existing.role,
       is_active: existing.is_active,

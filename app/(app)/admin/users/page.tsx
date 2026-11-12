@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Users, Shield, AlertCircle } from "lucide-react";
+import { Users, AlertCircle } from "lucide-react";
 import { AppRole, Profile } from "@/lib/types/domain";
 import { getRoleBadgeColor, getRoleLabel } from "@/lib/permissions/rbac";
 
 export default function AdminUsersPage() {
+  const [filter, setFilter] = useState<"all" | "pending">("all");
+  const [saving, setSaving] = useState<string | null>(null);
+  const [success, setSuccess] = useState("");
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -29,8 +32,9 @@ export default function AdminUsersPage() {
     loadUsers();
   }, [loadUsers]);
 
-  const handleUpdateUser = async (id: string, role: AppRole, is_active: boolean) => {
-    setErrorMsg(null);
+  const handleUpdateUser = async (id: string, role: AppRole | null, is_active: boolean) => {
+    if (saving) return;
+    setSaving(id); setErrorMsg(null); setSuccess("");
     try {
     const targetUser = users.find((u) => u.id === id);
     const res = await fetch(`/api/v1/admin/users`, {
@@ -51,7 +55,9 @@ export default function AdminUsersPage() {
       return;
     }
     await loadUsers();
+    setSuccess("Jenis akun dan status pengguna berhasil disimpan.");
     } catch { setErrorMsg("Perubahan pengguna gagal disimpan. Silakan coba kembali."); }
+    finally {setSaving(null);}
   };
 
   return (
@@ -63,6 +69,11 @@ export default function AdminUsersPage() {
         </h1>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setFilter("all")} aria-pressed={filter === "all"} className="rounded-lg border bg-white px-4 py-2 text-sm">Semua Pengguna ({users.length})</button>
+        <button onClick={() => setFilter("pending")} aria-pressed={filter === "pending"} className="rounded-lg border bg-white px-4 py-2 text-sm">Menunggu Penetapan ({users.filter(u => !u.role).length})</button>
+      </div>
+      {success && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
       {errorMsg && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -70,7 +81,7 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
+      <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-x-auto shadow-sm">
         <table className="w-full text-left text-xs">
           <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
             <tr>
@@ -90,7 +101,7 @@ export default function AdminUsersPage() {
                 </td>
               </tr>
             ) : (
-              users.map((u) => (
+              users.filter(u => filter === "all" || !u.role).map((u) => (
                 <tr key={u.id} className="hover:bg-[#F6F4F0]/60 transition">
                   <td className="py-3 px-4 font-bold text-[#1A3263]">{u.full_name}</td>
                   <td className="py-3 px-4 font-mono text-[#547792]">{u.email}</td>
@@ -116,21 +127,24 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right space-x-2">
-                    <select
-                      value={u.role || "ACCOUNTING"}
+                    {u.role === "ADMIN" ? <span className="text-xs font-semibold">Administrator</span> : <select
+                      aria-label={`Jenis akun ${u.full_name}`}
+                      disabled={saving !== null}
+                      value={u.role || ""}
                       onChange={(e) =>
                         handleUpdateUser(u.id, e.target.value as AppRole, u.is_active)
                       }
                       className="px-2.5 py-1 rounded border border-[#E8E2DB] bg-white font-semibold text-[#1A3263]"
                     >
+                      <option value="" disabled>Belum ditetapkan</option>
                       <option value="ACCOUNTING">Accounting</option>
-                      <option value="MAINTENANCE">Maintenance</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
+                      <option value="MAINTENANCE">Equipment</option>
+                    </select>}
                     <button
                       type="button"
+                      disabled={saving !== null}
                       onClick={() =>
-                        handleUpdateUser(u.id, u.role || "ACCOUNTING", !u.is_active)
+                        handleUpdateUser(u.id, u.role, !u.is_active)
                       }
                       className="px-2.5 py-1 rounded border border-[#E8E2DB] hover:bg-[#F6F4F0] font-semibold text-[#1A3263]"
                     >
@@ -144,12 +158,7 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      <div className="p-4 rounded-xl bg-white border border-[#E8E2DB] flex items-center gap-3 text-xs text-[#547792]">
-        <Shield className="w-4 h-4 text-[#1A3263] shrink-0" />
-        <span>
-          Sistem menjaga ketersediaan minimal satu Administrator aktif setiap saat agar fungsi tata kelola tetap berjalan.
-        </span>
-      </div>
+
     </div>
   );
 }

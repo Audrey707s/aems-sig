@@ -58,3 +58,11 @@ Setiap API memverifikasi akun aktif, membaca satu snapshot konsisten dari tabel 
 RPC mengambil lock transaksi dan memeriksa revisi database. Penulisan berdasarkan revisi lama menghasilkan HTTP 409 dan pengguna harus memuat ulang; sistem tidak mengulang request mutasi secara diam-diam. Trigger revisi juga mencakup perubahan melalui dashboard SQL. Riwayat tidak dihapus atau ditimpa, dan penghapusan master tetap berupa penonaktifan. Fungsi repository hanya dapat dipanggil oleh service-role server, sedangkan RLS tetap aktif pada tabel publik.
 
 Repository saat ini membaca snapshot domain lengkap untuk mempertahankan aturan lintas modul pada MVP. Volume import besar memerlukan pengukuran ukuran payload/waktu eksekusi dan pengembangan pemrosesan bertahap; tidak ada klaim kapasitas tanpa pengujian beban.
+
+## Akun personal dan jenis akun
+
+Pengguna mendaftar melalui `/register` memakai nama, email, dan password sendiri. Pendaftaran tidak menerima pilihan role. Trigger database membuat profil dengan `role=null`; pengguna hanya dapat membuka halaman menunggu penetapan dan mengelola password sendiri sampai admin menetapkan jenis akun. Halaman Pengguna menyediakan antrean Menunggu Penetapan dan pilihan Accounting/Equipment. Label Equipment memakai identifier internal MAINTENANCE agar data dan kewenangan yang sudah ada tetap kompatibel.
+
+Ganti Password tersedia di Profil dan halaman menunggu penetapan. Server memverifikasi password lama melalui Supabase Auth, memeriksa perbedaan dan konfirmasi password baru, lalu memperbarui identitas pengguna yang sedang login. Password tidak disimpan di tabel aplikasi, log, atau audit. Sesi lain ditutup setelah perubahan. Admin aktif terakhir dilindungi di server dan trigger database.
+
+Jalankan juga migrasi `20261112021715_personal_account_registration.sql`. Jika konfirmasi email diaktifkan pada Supabase, konfigurasi Site URL dan allowlist redirect untuk domain deployment dan `/auth/callback`; aplikasi mendukung callback PKCE serta konfirmasi token hash. Gunakan pengaturan pengiriman email yang tersedia pada proyek, tanpa menonaktifkan verifikasi secara otomatis.
