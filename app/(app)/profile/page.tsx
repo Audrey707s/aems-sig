@@ -4,20 +4,48 @@ import React from "react";
 import { PasswordChangeForm } from "@/components/ui/PasswordChangeForm";
 import { UserCheck, Shield } from "lucide-react";
 import { useAuth } from "@/components/ui/AppShell";
-import { getRoleBadgeColor, getRoleLabel, PermissionAction } from "@/lib/permissions/rbac";
+import {
+  getRoleBadgeColor,
+  getProfileLabel,
+  PermissionAction,
+} from "@/lib/permissions/rbac";
 
 const PERMISSION_LIST: Array<{ action: PermissionAction; label: string }> = [
-  { action: "asset:read", label: "Melihat Daftar & Detail Master Asset SAP" },
-  { action: "asset:write", label: "Menambah, Mengubah & Menghapus Master Asset SAP" },
-  { action: "equipment:read", label: "Melihat Daftar & Detail Master Equipment" },
-  { action: "equipment:write", label: "Menambah, Mengubah & Menghapus Master Equipment" },
-  { action: "spec:write", label: "Mengelola & Mempromosikan Komponen Spesifikasi" },
-  { action: "mapping:request", label: "Mengajukan Permintaan Mapping (LINK / MOVE / UNLINK / REPLACE)" },
-  { action: "mapping:approve", label: "Menyetujui / Menolak Pengajuan Mapping" },
-  { action: "import:asset", label: "Menjalankan Import Excel Master Asset" },
-  { action: "import:equipment", label: "Menjalankan Import Excel Master Equipment" },
+  { action: "asset:read", label: "Melihat Daftar & Detail Daftar Aset SAP" },
+  {
+    action: "asset:write",
+    label: "Menambah, Mengubah & Menghapus Daftar Aset SAP",
+  },
+  {
+    action: "equipment:read",
+    label: "Melihat Daftar & Detail Daftar Equipment",
+  },
+  {
+    action: "equipment:write",
+    label: "Menambah, Mengubah & Menghapus Daftar Equipment",
+  },
+  {
+    action: "spec:write",
+    label: "Mengelola & Mempromosikan Komponen Spesifikasi",
+  },
+  {
+    action: "mapping:request",
+    label: "Mengajukan Permintaan Mapping (LINK / MOVE / UNLINK / REPLACE)",
+  },
+  {
+    action: "mapping:approve",
+    label: "Menyetujui / Menolak Pengajuan Mapping",
+  },
+  { action: "import:asset", label: "Menjalankan Import Excel Daftar Aset" },
+  {
+    action: "import:equipment",
+    label: "Menjalankan Import Excel Daftar Equipment",
+  },
   { action: "import:mapping", label: "Menjalankan Import Excel Mapping" },
-  { action: "report:export", label: "Mengekspor Laporan ke Excel (.xlsx) & PDF" },
+  {
+    action: "report:export",
+    label: "Mengekspor Laporan ke Excel (.xlsx) & PDF",
+  },
   { action: "audit:view_full", label: "Mengakses Audit Trail Terpusat" },
   { action: "users:manage", label: "Mengelola Peran & Status Pengguna" },
 ];
@@ -41,19 +69,23 @@ export default function ProfilePage() {
       <div className="p-6 rounded-xl bg-white border border-[#E8E2DB] shadow-sm space-y-4 text-xs">
         <div className="flex items-center justify-between border-b border-[#E8E2DB] pb-4">
           <div>
-            <div className="text-base font-bold text-[#1A3263]">{user.full_name}</div>
+            <div className="text-base font-bold text-[#1A3263]">
+              {user.full_name}
+            </div>
             <div className="font-mono text-[#547792] mt-0.5">{user.email}</div>
           </div>
           <span
             className={`px-3 py-1 rounded-md border font-bold ${getRoleBadgeColor(user.role)}`}
           >
-            {getRoleLabel(user.role)}
+            {getProfileLabel(user)}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-y-2">
           <span className="text-[#547792]">Departemen:</span>
-          <span className="font-semibold text-[#1A3263]">{user.department || "-"}</span>
+          <span className="font-semibold text-[#1A3263]">
+            {user.department || "-"}
+          </span>
           <span className="text-[#547792]">Status Akun:</span>
           <span className="font-bold text-emerald-700">
             {user.is_active ? "AKTIF" : "NONAKTIF"}

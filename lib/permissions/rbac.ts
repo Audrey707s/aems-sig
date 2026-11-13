@@ -76,12 +76,17 @@ const ROLE_PERMISSIONS: Record<AppRole, Set<PermissionAction>> = {
  * and BR-AC-06 (users without assigned role have no access).
  */
 export function hasPermission(
-  profile: Pick<Profile, "role" | "is_active"> | null | undefined,
-  action: PermissionAction
+  profile:
+    | Pick<Profile, "role" | "is_active" | "account_level">
+    | null
+    | undefined,
+  action: PermissionAction,
 ): boolean {
   if (!profile || !profile.is_active || !profile.role) {
     return false;
   }
+  if (action === "mapping:approve" && profile.account_level === "MANAGER")
+    return true;
   const allowed = ROLE_PERMISSIONS[profile.role];
   return allowed ? allowed.has(action) : false;
 }
@@ -90,12 +95,17 @@ export function hasPermission(
  * Checks whether a user profile is allowed to run a given import type (Table 58 & Table 68).
  */
 export function canRunImportType(
-  profile: Pick<Profile, "role" | "is_active"> | null | undefined,
-  importType: ImportType
+  profile:
+    | Pick<Profile, "role" | "is_active" | "account_level">
+    | null
+    | undefined,
+  importType: ImportType,
 ): boolean {
   if (!profile || !profile.is_active || !profile.role) return false;
-  if (importType === "ASSET_MASTER") return hasPermission(profile, "import:asset");
-  if (importType === "EQUIPMENT_MASTER") return hasPermission(profile, "import:equipment");
+  if (importType === "ASSET_MASTER")
+    return hasPermission(profile, "import:asset");
+  if (importType === "EQUIPMENT_MASTER")
+    return hasPermission(profile, "import:equipment");
   if (importType === "MAPPING") return hasPermission(profile, "import:mapping");
   return false;
 }
@@ -124,4 +134,23 @@ export function getRoleBadgeColor(role: AppRole | null | undefined): string {
     default:
       return "bg-[#E8E2DB] text-[#1A3263] border-[#547792]/30";
   }
+}
+
+export function getProfileLabel(
+  profile: Pick<Profile, "role" | "account_level"> | null | undefined,
+) {
+  if (!profile?.role || profile.role === "ADMIN")
+    return getRoleLabel(profile?.role);
+  return `${profile.account_level === "MANAGER" ? "Manajer" : "Staff"} ${profile.role === "MAINTENANCE" ? "Maintenance" : "Accounting"}`;
+}
+export function canReviewRequest(
+  actor: Profile | null,
+  request: { approver_id?: string | null; requested_by: string },
+) {
+  return (
+    !!actor?.is_active &&
+    actor.id !== request.requested_by &&
+    (actor.role === "ADMIN" ||
+      (actor.account_level === "MANAGER" && request.approver_id === actor.id))
+  );
 }

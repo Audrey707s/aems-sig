@@ -13,12 +13,14 @@ async function handleGET(req: NextRequest) {
     const scope = req.nextUrl.searchParams.get("scope") || ""; // "mine" | "all"
 
     let requests = [...state.mapping_change_requests];
-    // Table 65: Non-admin sees own requests by default when scope="mine", or all for transparency in read
-    if (scope === "mine" || profile.role !== "ADMIN") {
-      if (scope === "mine") {
-        requests = requests.filter((r) => r.requested_by === profile.id);
-      }
-    }
+    if (scope === "mine")
+      requests = requests.filter((r) => r.requested_by === profile.id);
+    else if (profile.role !== "ADMIN")
+      requests = requests.filter(
+        (r) =>
+          r.requested_by === profile.id ||
+          (profile.account_level === "MANAGER" && r.approver_id === profile.id),
+      );
     if (statusFilter) {
       requests = requests.filter((r) => r.status === statusFilter);
     }
@@ -39,7 +41,7 @@ async function handlePOST(req: NextRequest) {
       throw new AemsError(
         "VALIDATION",
         parsed.error.issues.map((i) => i.message).join("; "),
-        400
+        400,
       );
     }
     const created = submitMappingRequest(profile, parsed.data);

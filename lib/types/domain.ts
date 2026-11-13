@@ -99,6 +99,8 @@ export type ReconciliationFindingType =
   | "MISSING_FROM_SAP_EXPORT";
 
 export interface Profile {
+  account_level?: "MANAGER" | "STAFF";
+  manager_id?: string | null;
   id: string;
   email: string;
   full_name: string;
@@ -261,6 +263,7 @@ export interface MappingChangeItem {
 }
 
 export interface MappingChangeRequest {
+  approver_id?: string | null;
   id: string;
   request_code: string;
   request_type: MappingRequestType;

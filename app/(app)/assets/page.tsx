@@ -1,9 +1,22 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  Suspense,
+} from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, ExternalLink, AlertCircle } from "lucide-react";
+import {
+  Box,
+  FileSpreadsheet,
+  Plus,
+  Search,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/components/ui/AppShell";
 
 interface EnrichedAsset {
@@ -34,7 +47,10 @@ function AssetsContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [references, setReferences] = useState<{ categories: Array<{id: string; name: string}>; locations: Array<{id: string; name: string}> }>({categories: [], locations: []});
+  const [references, setReferences] = useState<{
+    categories: Array<{ id: string; name: string }>;
+    locations: Array<{ id: string; name: string }>;
+  }>({ categories: [], locations: [] });
   const [items, setItems] = useState<EnrichedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQ);
@@ -68,22 +84,36 @@ function AssetsContent() {
       if (status) params.set("status", status);
       const res = await fetch(`/api/v1/assets?${params.toString()}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || "Data aset gagal dimuat.");
+      if (!res.ok)
+        throw new Error(json.error?.message || "Data aset gagal dimuat.");
       if (sequence !== requestSequence.value) return;
       setItems(json.data || []);
       setTotal(json.meta?.total || 0);
       setTotalPages(json.meta?.total_pages || 1);
-      setReferences({categories: json.references?.asset_categories || [], locations: json.references?.locations || []});
+      setReferences({
+        categories: json.references?.asset_categories || [],
+        locations: json.references?.locations || [],
+      });
     } catch (error) {
-      if (sequence === requestSequence.value) setErrorMsg(error instanceof Error ? error.message : "Periksa koneksi dan coba kembali.");
+      if (sequence === requestSequence.value)
+        setErrorMsg(
+          error instanceof Error
+            ? error.message
+            : "Periksa koneksi dan coba kembali.",
+        );
     } finally {
       if (sequence === requestSequence.value) setLoading(false);
     }
   }, [q, status, page, requestSequence]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { void loadAssets(); }, 200);
-    return () => { clearTimeout(timer); requestSequence.value++; };
+    const timer = setTimeout(() => {
+      void loadAssets();
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      requestSequence.value++;
+    };
   }, [loadAssets, requestSequence]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -92,45 +122,74 @@ function AssetsContent() {
     setSaving(true);
     setErrorMsg(null);
     try {
-    const res = await fetch("/api/v1/assets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...formData, acquisition_value: formData.acquisition_value === "" ? null : Number(formData.acquisition_value), acquisition_date: formData.acquisition_date || null, asset_category_id: formData.asset_category_id || null, location_id: formData.location_id || null }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setErrorMsg(json.error?.message || "Gagal menyimpan aset.");
-      return;
+      const res = await fetch("/api/v1/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          acquisition_value:
+            formData.acquisition_value === ""
+              ? null
+              : Number(formData.acquisition_value),
+          acquisition_date: formData.acquisition_date || null,
+          asset_category_id: formData.asset_category_id || null,
+          location_id: formData.location_id || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setErrorMsg(json.error?.message || "Gagal menyimpan aset.");
+        return;
+      }
+      setShowCreateModal(false);
+      setFormData((prev) => ({
+        ...prev,
+        sap_asset_no: "",
+        name: "",
+        description: "",
+      }));
+      loadAssets();
+    } catch {
+      setErrorMsg("Data gagal disimpan. Periksa koneksi dan coba kembali.");
+    } finally {
+      setSaving(false);
     }
-    setShowCreateModal(false);
-    setFormData((prev) => ({ ...prev, sap_asset_no: "", name: "", description: "" }));
-    loadAssets();
-    } catch { setErrorMsg("Data gagal disimpan. Periksa koneksi dan coba kembali."); }
-    finally { setSaving(false); }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
-            Master Asset (SAP)
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-[#1A3263]">
+            <Box className="h-6 w-6 text-[#547792]" />
+            Daftar Aset (SAP)
           </h1>
         </div>
 
-        {can("asset:write") && (
-          <button
-            type="button"
-            onClick={() => {
-              setErrorMsg(null);
-              setShowCreateModal(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white text-xs font-bold shadow-sm transition"
-          >
-            <Plus className="w-4 h-4 text-[#FAB95B]" />
-            <span>Tambah Aset SAP</span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {can("import:asset") && (
+            <Link
+              href="/assets/import"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#E8E2DB] bg-white px-3.5 py-2 text-xs font-bold"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Import Excel
+            </Link>
+          )}
+          {can("asset:write") && (
+            <button
+              type="button"
+              onClick={() => {
+                setErrorMsg(null);
+                setShowCreateModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#1A3263] hover:bg-[#122347] text-white text-xs font-bold shadow-sm transition"
+            >
+              <Plus className="w-4 h-4 text-[#FAB95B]" />
+              <span>Tambah Aset SAP</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -140,14 +199,20 @@ function AssetsContent() {
           <input
             type="text"
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); } }
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
             placeholder="Cari Nomor Aset SAP, Nama Aset, Serial, atau Cost Center..."
             className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-[#F6F4F0]/50 focus:bg-white outline-none focus:border-[#1A3263]"
           />
         </div>
         <select
           value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); } }
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
           className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
         >
           <option value="">Semua Status</option>
@@ -157,7 +222,21 @@ function AssetsContent() {
         </select>
       </div>
 
-      {errorMsg && !showCreateModal && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMsg} <button type="button" onClick={() => void loadAssets()} className="ml-3 underline">Coba kembali</button></div>}
+      {errorMsg && !showCreateModal && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
+          {errorMsg}{" "}
+          <button
+            type="button"
+            onClick={() => void loadAssets()}
+            className="ml-3 underline"
+          >
+            Coba kembali
+          </button>
+        </div>
+      )}
       {/* Table */}
       <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -190,21 +269,32 @@ function AssetsContent() {
                 </tr>
               ) : (
                 items.map((asset) => (
-                  <tr key={asset.id} className="hover:bg-[#F6F4F0]/60 transition">
+                  <tr
+                    key={asset.id}
+                    className="hover:bg-[#F6F4F0]/60 transition"
+                  >
                     <td className="py-3 px-4 font-mono font-bold text-[#1A3263]">
                       {asset.sap_asset_no}
                     </td>
-                    <td className="py-3 px-4 font-mono text-[#547792]">{asset.sap_sub_no}</td>
+                    <td className="py-3 px-4 font-mono text-[#547792]">
+                      {asset.sap_sub_no}
+                    </td>
                     <td className="py-3 px-4">
-                      <div className="font-bold text-[#1A3263]">{asset.name}</div>
+                      <div className="font-bold text-[#1A3263]">
+                        {asset.name}
+                      </div>
                       {asset.description && (
                         <div className="text-[11px] text-[#547792] truncate max-w-xs">
                           {asset.description}
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-[#1A3263]">{asset.category_name}</td>
-                    <td className="py-3 px-4 text-[#547792]">{asset.location_name}</td>
+                    <td className="py-3 px-4 text-[#1A3263]">
+                      {asset.category_name}
+                    </td>
+                    <td className="py-3 px-4 text-[#547792]">
+                      {asset.location_name}
+                    </td>
                     <td className="py-3 px-4 font-mono font-semibold text-[#1A3263]">
                       {asset.acquisition_value !== null
                         ? `${asset.currency || "IDR"} ${Number(asset.acquisition_value).toLocaleString("id-ID")}`
@@ -213,7 +303,8 @@ function AssetsContent() {
                     <td className="py-3 px-4">
                       {asset.total_equipment_count > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8EEF7] text-[#1A3263]">
-                          {asset.direct_equipment_count} Langsung / {asset.total_equipment_count} Total
+                          {asset.direct_equipment_count} Langsung /{" "}
+                          {asset.total_equipment_count} Total
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/60">
@@ -240,7 +331,14 @@ function AssetsContent() {
                         <span>Detail &amp; Tree</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
-                      {can("asset:write") && <Link href={`/assets/${asset.id}?edit=1`} className="ml-3 inline-flex rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-xs font-semibold text-[#1A3263]">Ubah</Link>}
+                      {can("asset:write") && (
+                        <Link
+                          href={`/assets/${asset.id}?edit=1`}
+                          className="ml-3 inline-flex rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-xs font-semibold text-[#1A3263]"
+                        >
+                          Ubah
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -252,10 +350,26 @@ function AssetsContent() {
 
       {/* Create Asset Modal */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <span role="status">{total} data ditemukan · Halaman {page} dari {totalPages}</span>
+        <span role="status">
+          {total} data ditemukan · Halaman {page} dari {totalPages}
+        </span>
         <div className="flex gap-2">
-          <button type="button" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border bg-white px-3 py-2">Sebelumnya</button>
-          <button type="button" disabled={loading || page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-lg border bg-white px-3 py-2">Berikutnya</button>
+          <button
+            type="button"
+            disabled={loading || page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-lg border bg-white px-3 py-2"
+          >
+            Sebelumnya
+          </button>
+          <button
+            type="button"
+            disabled={loading || page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-lg border bg-white px-3 py-2"
+          >
+            Berikutnya
+          </button>
         </div>
       </div>
 
@@ -263,7 +377,9 @@ function AssetsContent() {
         <div className="fixed inset-0 z-50 bg-[#1A3263]/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#E8E2DB] space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2DB] pb-3">
-              <h2 className="text-base font-bold text-[#1A3263]">Tambah Master Asset (SAP)</h2>
+              <h2 className="text-base font-bold text-[#1A3263]">
+                Tambah Daftar Aset (SAP)
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -283,67 +399,92 @@ function AssetsContent() {
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Company Code *</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Company Code *
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.company_code}
-                    onChange={(e) => setFormData({ ...formData, company_code: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, company_code: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">No. Aset SAP *</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    No. Aset SAP *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="SAP-005"
                     value={formData.sap_asset_no}
-                    onChange={(e) => setFormData({ ...formData, sap_asset_no: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sap_asset_no: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Sub-Number *</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Sub-Number *
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.sap_sub_no}
-                    onChange={(e) => setFormData({ ...formData, sap_sub_no: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sap_sub_no: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1A3263] mb-1">Nama Aset *</label>
+                <label className="block font-semibold text-[#1A3263] mb-1">
+                  Nama Aset *
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Cost Center</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Cost Center
+                  </label>
                   <input
                     type="text"
                     value={formData.cost_center}
-                    onChange={(e) => setFormData({ ...formData, cost_center: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, cost_center: e.target.value })
+                    }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#1A3263] mb-1">Nilai Perolehan (IDR)</label>
+                  <label className="block font-semibold text-[#1A3263] mb-1">
+                    Nilai Perolehan (IDR)
+                  </label>
                   <input
                     type="number"
                     min={0}
                     value={formData.acquisition_value}
                     onChange={(e) =>
-                      setFormData({ ...formData, acquisition_value: e.target.value })
+                      setFormData({
+                        ...formData,
+                        acquisition_value: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
@@ -351,25 +492,54 @@ function AssetsContent() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="font-semibold">Kategori
-                  <select value={formData.asset_category_id} onChange={e => setFormData({...formData, asset_category_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                <label className="font-semibold">
+                  Kategori
+                  <select
+                    value={formData.asset_category_id}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        asset_category_id: e.target.value,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border p-2"
+                  >
                     <option value="">Pilih kategori</option>
-                    {references.categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {references.categories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
-                <label className="font-semibold">Lokasi
-                  <select value={formData.location_id} onChange={e => setFormData({...formData, location_id: e.target.value})} className="mt-1 w-full rounded-lg border p-2">
+                <label className="font-semibold">
+                  Lokasi
+                  <select
+                    value={formData.location_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location_id: e.target.value })
+                    }
+                    className="mt-1 w-full rounded-lg border p-2"
+                  >
                     <option value="">Pilih lokasi</option>
-                    {references.locations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {references.locations.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
               <div>
-                <label className="block font-semibold text-[#1A3263] mb-1">Deskripsi</label>
+                <label className="block font-semibold text-[#1A3263] mb-1">
+                  Deskripsi
+                </label>
                 <textarea
                   rows={2}
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                 />
               </div>
@@ -400,7 +570,11 @@ function AssetsContent() {
 
 export default function AssetsPage() {
   return (
-    <Suspense fallback={<div className="text-sm text-[#547792]">Memuat daftar aset...</div>}>
+    <Suspense
+      fallback={
+        <div className="text-sm text-[#547792]">Memuat daftar aset...</div>
+      }
+    >
       <AssetsContent />
     </Suspense>
   );
