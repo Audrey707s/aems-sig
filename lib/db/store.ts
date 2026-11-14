@@ -3865,3 +3865,74 @@ export function recordReportExportAudit(
     [],
   );
 }
+
+/** Editable personal fields never include role, manager, activity status or email identity. */
+export function updateOwnProfile(
+  actor: Profile,
+  input: { full_name: string; expected_updated_at?: string },
+): Profile {
+  const state = getAemsState(),
+    profile = state.profiles.find((p) => p.id === actor.id);
+  if (!profile?.is_active || !profile.role)
+    throw new AemsError("FORBIDDEN", "Akses akun tidak tersedia.", 403);
+  if (
+    input.expected_updated_at &&
+    input.expected_updated_at !== profile.updated_at
+  )
+    throw new AemsError(
+      "VERSION_CONFLICT",
+      "Profil berubah. Muat ulang sebelum menyimpan.",
+      409,
+    );
+  const name = input.full_name.trim();
+  if (name.length < 2 || name.length > 120)
+    throw new AemsError("VALIDATION", "Nama lengkap harus 2–120 karakter.");
+  if (name === profile.full_name) return profile;
+  const old = { full_name: profile.full_name };
+  profile.full_name = name;
+  profile.updated_at = new Date().toISOString();
+  appendAuditLog(
+    state,
+    profile,
+    "USER_PROFILE",
+    profile.id,
+    profile.email,
+    "UPDATE_OWN_PROFILE",
+    old,
+    { full_name: name },
+    ["full_name"],
+  );
+  return profile;
+}
+
+/** The server supplies a freshly verified Auth identity; pending new_email is never accepted. */
+export function syncOwnVerifiedEmail(
+  actor: Profile,
+  identity: { id: string; email?: string; email_confirmed_at?: string },
+): Profile {
+  const state = getAemsState(),
+    profile = state.profiles.find((p) => p.id === actor.id);
+  if (
+    !profile?.is_active ||
+    identity.id !== actor.id ||
+    !identity.email ||
+    !identity.email_confirmed_at
+  )
+    throw new AemsError("FORBIDDEN", "Email belum terverifikasi.", 403);
+  if (profile.email === identity.email) return profile;
+  const old = { email: profile.email };
+  profile.email = identity.email;
+  profile.updated_at = new Date().toISOString();
+  appendAuditLog(
+    state,
+    profile,
+    "USER_PROFILE",
+    profile.id,
+    profile.email,
+    "CONFIRM_EMAIL_CHANGE",
+    old,
+    { email: profile.email },
+    ["email"],
+  );
+  return profile;
+}
