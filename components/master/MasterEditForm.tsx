@@ -12,7 +12,7 @@ export function MasterEditForm({kind, item, references, isAdmin, onCancel, onSav
   onCancel: () => void; onSaved: () => Promise<void>; onReload: () => Promise<void>;
 }) {
   const fields: Field[] = kind === "asset" ? [
-    {key:"company_code",label:"Company code",required:true,admin:true},{key:"sap_asset_no",label:"Nomor aset SAP",required:true,admin:true},{key:"sap_sub_no",label:"Sub-nomor aset",required:true,admin:true},
+    {key:"company_code",label:"Company code",required:true,admin:true},{key:"sap_asset_no",label:"Nomor aset SAP",required:true,admin:true},{key:"sap_sub_no",label:"Sub-aset SAP",required:true,admin:true},
     ...commonFields,{key:"description",label:"Deskripsi",type:"textarea"},{key:"asset_category_id",label:"Kategori",options:references.categories.map(c=>[c.id,c.name])},
     {key:"location_id",label:"Lokasi",options:references.locations.map(l=>[l.id,l.name])},{key:"cost_center",label:"Cost center"},
     {key:"acquisition_date",label:"Tanggal perolehan",type:"date"},{key:"acquisition_value",label:"Nilai perolehan",type:"number"},{key:"currency",label:"Mata uang",required:true},

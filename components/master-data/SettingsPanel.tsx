@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Settings, Save, CheckCircle2 } from "lucide-react";
+import { SUB_ASSET_HELP } from "@/lib/table-query";
 import { AppSettingsConfig } from "@/lib/types/domain";
 
 export default function AdminSettingsPage() {
@@ -56,7 +57,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1A3263]">
           <Settings className="w-6 h-6 text-[#547792]" />
@@ -143,10 +144,12 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <label className="block font-semibold text-[#1A3263] mb-1">
-                Default SAP Sub-Number
+                Default sub-aset SAP
               </label>
               <input
                 type="text"
+                aria-label="Default sub-aset SAP"
+                title={SUB_ASSET_HELP}
                 value={settings.normalization.default_sub_no}
                 onChange={(e) =>
                   setSettings({

@@ -8,15 +8,18 @@ import React, {
   Suspense,
 } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
   FileSpreadsheet,
   Plus,
-  Search,
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
+import { ColumnHeader } from "@/components/table/ColumnHeader";
+import { useColumnFilters } from "@/components/table/useColumnFilters";
+import { SearchField } from "@/components/ui/SearchField";
+import { NONE_VALUE, statusOptions, mappingOptions, SUB_ASSET_HELP } from "@/lib/table-query";
 import { useAuth } from "@/components/ui/AppShell";
 
 interface EnrichedAsset {
@@ -41,10 +44,13 @@ interface EnrichedAsset {
 function AssetsContent() {
   const { can } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const columnQuery = searchParams.toString();
   const initialQ = searchParams.get("q") || "";
 
   const { current: requestSequence } = useRef({ value: 0 });
   const [page, setPage] = useState(1);
+  const {column} = useColumnFilters("sap_asset_no", () => setPage(1));
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [references, setReferences] = useState<{
@@ -54,7 +60,6 @@ function AssetsContent() {
   const [items, setItems] = useState<EnrichedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQ);
-  const [status, setStatus] = useState(searchParams.get("status") || "");
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -78,10 +83,9 @@ function AssetsContent() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams(columnQuery);
       params.set("page", String(page));
-      if (q) params.set("q", q);
-      if (status) params.set("status", status);
+      if (q) params.set("q", q); else params.delete("q");
       const res = await fetch(`/api/v1/assets?${params.toString()}`);
       const json = await res.json();
       if (!res.ok)
@@ -104,7 +108,7 @@ function AssetsContent() {
     } finally {
       if (sequence === requestSequence.value) setLoading(false);
     }
-  }, [q, status, page, requestSequence]);
+  }, [q, columnQuery, page, requestSequence]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -127,6 +131,7 @@ function AssetsContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          sap_sub_no: formData.sap_sub_no.trim() || "0000",
           acquisition_value:
             formData.acquisition_value === ""
               ? null
@@ -192,34 +197,9 @@ function AssetsContent() {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="p-4 rounded-xl bg-white border border-[#E8E2DB] flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#547792] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Cari Nomor Aset SAP, Nama Aset, Serial, atau Cost Center..."
-            className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-[#F6F4F0]/50 focus:bg-white outline-none focus:border-[#1A3263]"
-          />
-        </div>
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-          className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
-        >
-          <option value="">Semua Status</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
-          <option value="DISPOSED">DISPOSED</option>
-        </select>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#E8E2DB] bg-white p-4">
+        <SearchField aria-label="Cari aset" value={q} onChange={event => {setQ(event.target.value); setPage(1);}} placeholder="Cari nomor, nama, serial, atau spesifikasi…" />
+        <button type="button" onClick={() => {setQ(""); setPage(1); router.push("/assets",{scroll:false});}} className="rounded-lg border border-[#E8E2DB] px-3 py-2 text-xs font-semibold">Reset tabel</button>
       </div>
 
       {errorMsg && !showCreateModal && (
@@ -243,14 +223,14 @@ function AssetsContent() {
           <table className="w-full text-left text-xs">
             <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
               <tr>
-                <th className="py-3 px-4 font-bold">No. Aset SAP</th>
-                <th className="py-3 px-4 font-bold">Sub</th>
-                <th className="py-3 px-4 font-bold">Nama Aset</th>
-                <th className="py-3 px-4 font-bold">Kategori</th>
-                <th className="py-3 px-4 font-bold">Lokasi</th>
-                <th className="py-3 px-4 font-bold">Nilai Perolehan</th>
-                <th className="py-3 px-4 font-bold">Equipment Terhubung</th>
-                <th className="py-3 px-4 font-bold">Status</th>
+                <ColumnHeader {...column("No. Aset SAP", "sap_asset_no")} />
+                <ColumnHeader {...column("Sub-aset SAP", "sap_sub_no")} />
+                <ColumnHeader {...column("Nama Aset", "name")} />
+                <ColumnHeader {...column("Kategori", "category_name", "category_id", [...references.categories.map(r => ({value:r.id,label:r.name})),{value:NONE_VALUE,label:"Tanpa kategori"}])} />
+                <ColumnHeader {...column("Lokasi", "location_name", "location_id", [...references.locations.map(r => ({value:r.id,label:r.name})),{value:NONE_VALUE,label:"Tanpa lokasi"}])} />
+                <ColumnHeader {...column("Nilai Perolehan", "acquisition_value")} />
+                <ColumnHeader {...column("Equipment Terhubung", "total_equipment_count", "mapping", mappingOptions)} />
+                <ColumnHeader {...column("Status", "status", "status", statusOptions)} />
                 <th className="py-3 px-4 font-bold text-right">Aksi</th>
               </tr>
             </thead>
@@ -320,7 +300,7 @@ function AssetsContent() {
                             : "bg-[#E8E2DB] text-[#1A3263]"
                         }`}
                       >
-                        {asset.status}
+                        {statusOptions.find(option => option.value === asset.status)?.label || asset.status}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -375,7 +355,7 @@ function AssetsContent() {
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-[#1A3263]/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#E8E2DB] space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 shadow-xl border border-[#E8E2DB] space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2DB] pb-3">
               <h2 className="text-base font-bold text-[#1A3263]">
                 Tambah Daftar Aset (SAP)
@@ -429,17 +409,19 @@ function AssetsContent() {
                 </div>
                 <div>
                   <label className="block font-semibold text-[#1A3263] mb-1">
-                    Sub-Number *
+                    Sub-aset SAP
                   </label>
                   <input
                     type="text"
-                    required
+                    aria-label="Sub-aset SAP"
+                    title={SUB_ASSET_HELP}
                     value={formData.sap_sub_no}
                     onChange={(e) =>
                       setFormData({ ...formData, sap_sub_no: e.target.value })
                     }
                     className="w-full px-3 py-2 rounded-lg border border-[#E8E2DB] text-[#1A3263]"
                   />
+                  <p className="mt-1 text-[11px] text-[#547792]">{SUB_ASSET_HELP}</p>
                 </div>
               </div>
 

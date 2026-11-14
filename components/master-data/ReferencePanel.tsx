@@ -2,6 +2,10 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { MapPin, Tags, Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { useAuth } from "@/components/ui/AppShell";
+import { useSearchParams } from "next/navigation";
+import { ColumnHeader } from "@/components/table/ColumnHeader";
+import { useColumnFilters } from "@/components/table/useColumnFilters";
+import { matchesSelected, sortTableRows } from "@/lib/table-query";
 import type { ReferenceItem } from "@/lib/types/domain";
 
 type Kind = "asset_categories" | "equipment_categories" | "locations";
@@ -16,6 +20,8 @@ export default function ReferencePanel({
 }: {
   locations?: boolean;
 }) {
+  const tableParams = useSearchParams();
+  const {column, sortBy, sortDir} = useColumnFilters("name", () => {});
   const {current: sequence} = useRef({value:0});
   const { user } = useAuth();
   const admin = user?.role === "ADMIN";
@@ -104,20 +110,22 @@ export default function ReferencePanel({
     }
     return false;
   };
+  const sortedRows = sortTableRows(rows, sortBy, sortDir, ["name", "code", "is_active"], "name");
   const ordered: { row: ReferenceItem; depth: number }[] = [];
   const visited = new Set<string>();
   const visit = (row: ReferenceItem, depth: number) => {
     if (visited.has(row.id)) return;
     visited.add(row.id);
     ordered.push({ row, depth });
-    rows
+    sortedRows
       .filter((r) => r.parent_id === row.id)
       .forEach((r) => visit(r, depth + 1));
   };
-  rows
+  sortedRows
     .filter((r) => !r.parent_id || !rows.some((p) => p.id === r.parent_id))
     .forEach((r) => visit(r, 0));
-  rows.forEach((r) => visit(r, 0));
+  sortedRows.forEach((r) => visit(r, 0));
+  const visibleRows = ordered.filter(({row}) => matchesSelected(row.is_active, tableParams.get("active")));
   const Icon = locations ? MapPin : Tags;
   const input =
     "w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2.5 text-sm";
@@ -306,9 +314,9 @@ export default function ReferencePanel({
         <table className="w-full text-left text-sm">
           <thead className="bg-[#E8E2DB]/50 text-[#1A3263]">
             <tr>
-              <th className="px-4 py-3">Nama / Hierarki</th>
-              <th className="px-4 py-3">Kode</th>
-              <th className="px-4 py-3">Status</th>
+              <ColumnHeader {...column("Nama / Hierarki", "name")} />
+              <ColumnHeader {...column("Kode", "code")} />
+              <ColumnHeader {...column("Status", "is_active", "active", [{value:"true",label:"Aktif"},{value:"false",label:"Nonaktif"}])} />
               {admin && <th className="px-4 py-3 text-right">Tindakan</th>}
             </tr>
           </thead>
@@ -319,14 +327,14 @@ export default function ReferencePanel({
                   Memuat data…
                 </td>
               </tr>
-            ) : !ordered.length ? (
+            ) : !visibleRows.length ? (
               <tr>
                 <td colSpan={admin ? 4 : 3} className="p-6 text-center">
                   Belum ada data.
                 </td>
               </tr>
             ) : (
-              ordered.map(({ row, depth }) => (
+              visibleRows.map(({ row, depth }) => (
                 <tr key={row.id}>
                   <td className="px-4 py-3">
                     <span

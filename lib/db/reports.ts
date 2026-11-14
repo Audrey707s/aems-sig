@@ -86,7 +86,7 @@ export function buildStandardReport(
         columns: [
           { header: "Company", key: "company_code", width: 12 },
           { header: "No. Aset SAP", key: "sap_asset_no", width: 18 },
-          { header: "Sub-No", key: "sap_sub_no", width: 12 },
+          { header: "Sub-aset SAP", key: "sap_sub_no", width: 12 },
           { header: "Nama Aset", key: "name", width: 32 },
           { header: "Kategori", key: "category_name", width: 22 },
           { header: "Lokasi", key: "location_name", width: 22 },

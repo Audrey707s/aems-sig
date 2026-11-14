@@ -1,3 +1,4 @@
+import { matchesSelected, sortTableRows, assetSortKeys } from "@/lib/table-query";
 import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -17,7 +18,7 @@ async function handleGET(req: NextRequest) {
     const locationId = sp.get("location_id") || "";
     const mappingFilter = sp.get("mapping") || ""; // "MAPPED" | "UNMAPPED" | ""
     const sortBy = sp.get("sort_by") || "sap_asset_no";
-    const sortDir = sp.get("sort_dir") === "desc" ? -1 : 1;
+    const sortDir = sp.get("sort_dir") === "desc" ? "desc" : "asc";
     const page = Math.max(Number(sp.get("page") || 1), 1);
     const pageSize = Math.min(
       Math.max(Number(sp.get("page_size") || 25), 1),
@@ -64,26 +65,8 @@ async function handleGET(req: NextRequest) {
           (a.serial_no && a.serial_no.toLowerCase().includes(q)),
       );
     }
-    if (status) {
-      items = items.filter((a) => a.status === status);
-    }
-    if (categoryId) {
-      items = items.filter((a) => a.asset_category_id === categoryId);
-    }
-    if (locationId) {
-      items = items.filter((a) => a.location_id === locationId);
-    }
-    if (mappingFilter === "MAPPED") {
-      items = items.filter((a) => a.mapping_status === "MAPPED");
-    } else if (mappingFilter === "UNMAPPED") {
-      items = items.filter((a) => a.mapping_status === "UNMAPPED");
-    }
-
-    items.sort((a, b) => {
-      const av = String((a as Record<string, unknown>)[sortBy] ?? "");
-      const bv = String((b as Record<string, unknown>)[sortBy] ?? "");
-      return av.localeCompare(bv, undefined, { numeric: true }) * sortDir;
-    });
+    items = items.filter(item => matchesSelected(item.status, status) && matchesSelected(item.asset_category_id, categoryId) && matchesSelected(item.location_id, locationId) && matchesSelected(item.mapping_status, mappingFilter));
+    items = sortTableRows(items, sortBy, sortDir, assetSortKeys, "sap_asset_no");
 
     const total = items.length;
     const paged = items.slice((page - 1) * pageSize, page * pageSize);

@@ -1,11 +1,17 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { ColumnHeader } from "@/components/table/ColumnHeader";
+import { useColumnFilters } from "@/components/table/useColumnFilters";
+import { matchesSelected, sortTableRows, NONE_VALUE } from "@/lib/table-query";
 import React, { useEffect, useState, useCallback } from "react";
 import { Users, AlertCircle } from "lucide-react";
 import { AppRole, Profile } from "@/lib/types/domain";
 import { getRoleBadgeColor, getProfileLabel } from "@/lib/permissions/rbac";
 
 export default function AdminUsersPage() {
+  const tableParams = useSearchParams();
+  const {column, sortBy, sortDir} = useColumnFilters("full_name", () => {});
   const [filter, setFilter] = useState<"all" | "pending">("all");
   const [saving, setSaving] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
@@ -80,6 +86,9 @@ export default function AdminUsersPage() {
     }
   };
 
+  const visibleUsers = sortTableRows(users.filter(u => (filter === "all" || !u.role) && matchesSelected(u.department, tableParams.get("department")) && matchesSelected(u.role, tableParams.get("role")) && matchesSelected(u.is_active, tableParams.get("active"))), sortBy, sortDir, ["full_name","email","department","role","is_active"], "full_name");
+  const departmentOptions = [...new Set(users.map(u => u.department).filter((value): value is string => !!value))].sort().map(value => ({value,label:value}));
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,11 +133,11 @@ export default function AdminUsersPage() {
         <table className="w-full text-left text-xs">
           <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
             <tr>
-              <th className="py-3 px-4 font-bold">Nama Lengkap</th>
-              <th className="py-3 px-4 font-bold">Email</th>
-              <th className="py-3 px-4 font-bold">Departemen</th>
-              <th className="py-3 px-4 font-bold">Peran Saat Ini</th>
-              <th className="py-3 px-4 font-bold">Status Akun</th>
+              <ColumnHeader {...column("Nama Lengkap", "full_name")} />
+              <ColumnHeader {...column("Email", "email")} />
+              <ColumnHeader {...column("Departemen", "department", "department", [...departmentOptions,{value:NONE_VALUE,label:"Tanpa departemen"}])} />
+              <ColumnHeader {...column("Peran Saat Ini", "role", "role", [{value:"ADMIN",label:"Administrator"},{value:"ACCOUNTING",label:"Accounting"},{value:"MAINTENANCE",label:"Maintenance"},{value:NONE_VALUE,label:"Belum ditetapkan"}])} />
+              <ColumnHeader {...column("Status Akun", "is_active", "active", [{value:"true",label:"Aktif"},{value:"false",label:"Nonaktif"}])} />
               <th className="py-3 px-4 font-bold text-right">
                 Ubah Peran / Status
               </th>
@@ -141,10 +150,8 @@ export default function AdminUsersPage() {
                   Memuat daftar pengguna...
                 </td>
               </tr>
-            ) : (
-              users
-                .filter((u) => filter === "all" || !u.role)
-                .map((u) => (
+            ) : !visibleUsers.length ? (<tr><td colSpan={6} className="p-6 text-center text-[#547792]">Tidak ada pengguna sesuai filter.</td></tr>) : (
+              visibleUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-[#F6F4F0]/60 transition">
                     <td className="py-3 px-4 font-bold text-[#1A3263]">
                       {u.full_name}

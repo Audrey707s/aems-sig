@@ -119,3 +119,11 @@ Halaman aplikasi dan autentikasi memiliki transisi masuk singkat lewat template 
 - Pilihan **Terang / Gelap / Sistem** tersedia di header semua role serta halaman autentikasi. Preferensi `aems.theme.v1` tersimpan pada browser, mengikuti perubahan OS dalam mode Sistem, dan disinkronkan antar-tab. Script sebelum paint menghindari kilatan tema; penyimpanan browser yang diblokir tetap dapat memakai tema selama tab aktif.
 - Palet aplikasi AEMS tetap navy/steel/amber. Logo memakai bentuk AEMS dan palet ATM: huruf `#0D0F0C`, aksen `#EB232D` pada mode terang; huruf putih dan aksen gelap pada mode gelap. Gambar sumber tetap disimpan dan filter SVG menetapkan warna brand secara tepat.
 - Pencarian universal di header dan halaman Pencarian memakai komponen input yang sama, mengikuti ukuran, border, ikon dan latar pencarian daftar.
+
+### Filter kolom dan identitas sub-aset SAP
+
+- Daftar Aset dan Daftar Equipment: klik judul kolom untuk sortir naik/turun; kolom kategori, lokasi, status, kondisi, jenis, relasi dan level menyediakan pilihan jamak yang relevan. Pilihan digabung antarkolom (AND), sedangkan beberapa nilai pada satu kolom memakai OR. Filter dan sortir diterapkan di server **sebelum pagination** serta tersimpan pada URL. Tersedia reset per kolom dan reset seluruh tabel.
+- Pengguna, Kategori Aset/Equipment dan Lokasi Aset menggunakan kontrol kolom yang sama. Pengurutan referensi tetap menjaga induk dan anak dalam cabangnya.
+- Panel filter dirender di luar pembungkus tabel agar tidak terpotong saat tabel digeser. Mendukung pencarian pilihan, keyboard, Escape, klik di luar panel, serta tema terang/gelap.
+- Halaman Pengaturan memakai seluruh lebar area konten, mengikuti ukuran layar.
+- **Sub-aset SAP** (sebelumnya Sub/Sub-No) membedakan bagian aset dengan nomor utama SAP yang sama. Tetap dipertahankan pada identitas database, impor dan laporan agar data berbeda tidak tertimpa. Aset utama menggunakan `0000`; input pembuatan yang dikosongkan memakai nilai tersebut. Tidak ada penghapusan atau perubahan kunci data lama.

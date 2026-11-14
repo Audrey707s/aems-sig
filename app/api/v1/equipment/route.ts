@@ -1,3 +1,4 @@
+import { matchesSelected, sortTableRows, equipmentSortKeys } from "@/lib/table-query";
 import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -24,7 +25,7 @@ async function handleGET(req: NextRequest) {
       sp.get("mapping") ||
       (sp.get("unmapped_only") === "true" ? "UNMAPPED" : "");
     const sortBy = sp.get("sort_by") || "equipment_no";
-    const sortDir = sp.get("sort_dir") === "desc" ? -1 : 1;
+    const sortDir = sp.get("sort_dir") === "desc" ? "desc" : "asc";
     const page = Math.max(Number(sp.get("page") || 1), 1);
     const pageSize = Math.min(
       Math.max(Number(sp.get("page_size") || 25), 1),
@@ -53,33 +54,8 @@ async function handleGET(req: NextRequest) {
           (e.root_asset_no && e.root_asset_no.toLowerCase().includes(q)),
       );
     }
-    if (kind) {
-      items = items.filter((e) => e.kind === kind);
-    }
-    if (status) {
-      items = items.filter((e) => e.status === status);
-    }
-    if (condition) {
-      items = items.filter((e) => e.condition === condition);
-    }
-    if (locationId) {
-      items = items.filter((e) => e.location_id === locationId);
-    }
-    if (mapping === "MAPPED") {
-      items = items.filter((e) => e.root_asset_id !== null);
-    } else if (mapping === "UNMAPPED") {
-      items = items.filter((e) => e.root_asset_id === null);
-    }
-
-    items.sort((a, b) => {
-      const av = String(
-        (a as unknown as Record<string, unknown>)[sortBy] ?? "",
-      );
-      const bv = String(
-        (b as unknown as Record<string, unknown>)[sortBy] ?? "",
-      );
-      return av.localeCompare(bv, undefined, { numeric: true }) * sortDir;
-    });
+    items = items.filter(item => matchesSelected(item.kind, kind) && matchesSelected(item.status, status) && matchesSelected(item.condition, condition) && matchesSelected(item.location_id, locationId) && matchesSelected(item.equipment_category_id, sp.get("category_id")) && matchesSelected(item.root_asset_id, sp.get("root_asset_id")) && matchesSelected(item.is_unmapped ? "UNMAPPED" : "MAPPED", mapping) && matchesSelected(item.parent_kind, sp.get("parent_kind")) && matchesSelected(item.depth, sp.get("depth")));
+    items = sortTableRows(items, sortBy, sortDir, equipmentSortKeys, "equipment_no");
 
     const total = items.length;
     const paged = items.slice((page - 1) * pageSize, page * pageSize);
@@ -93,6 +69,8 @@ async function handleGET(req: NextRequest) {
         total_pages: Math.max(Math.ceil(total / pageSize), 1),
       },
       references: {
+        assets: state.assets.filter(a => !a.deleted_at).map(a => ({id: a.id, name: `${a.sap_asset_no} · ${a.name}`})),
+        depths: [...new Set(getEnrichedEquipment(false).map(e => e.depth))].sort((a,b) => a-b),
         equipment_categories: state.equipment_categories.filter(
           (r) => r.is_active,
         ),
