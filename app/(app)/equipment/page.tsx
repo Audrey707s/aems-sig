@@ -8,15 +8,18 @@ import React, {
   Suspense,
 } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Cpu,
   FileSpreadsheet,
   Plus,
-  Search,
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
+import { ColumnHeader } from "@/components/table/ColumnHeader";
+import { useColumnFilters } from "@/components/table/useColumnFilters";
+import { SearchField } from "@/components/ui/SearchField";
+import { NONE_VALUE, equipmentStatusOptions, kindOptions, physicalOptions } from "@/lib/table-query";
 import { useAuth } from "@/components/ui/AppShell";
 
 interface EnrichedEquipment {
@@ -42,23 +45,24 @@ interface EnrichedEquipment {
 function EquipmentContent() {
   const { can } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const columnQuery = searchParams.toString();
   const initialQ = searchParams.get("q") || "";
-  const initialCond = searchParams.get("condition") || "";
 
   const { current: requestSequence } = useRef({ value: 0 });
   const [page, setPage] = useState(1);
+  const {column} = useColumnFilters("equipment_no", () => setPage(1));
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [references, setReferences] = useState<{
     categories: Array<{ id: string; name: string }>;
     locations: Array<{ id: string; name: string }>;
-  }>({ categories: [], locations: [] });
+    assets: Array<{id: string; name: string}>;
+    depths: number[];
+  }>({ categories: [], locations: [], assets: [], depths: [] });
   const [items, setItems] = useState<EnrichedEquipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQ);
-  const [condition, setCondition] = useState(initialCond);
-  const [kind, setKind] = useState("");
-  const status = searchParams.get("status") || "";
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -81,12 +85,9 @@ function EquipmentContent() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams(columnQuery);
       params.set("page", String(page));
-      if (q) params.set("q", q);
-      if (condition) params.set("condition", condition);
-      if (kind) params.set("kind", kind);
-      if (status) params.set("status", status);
+      if (q) params.set("q", q); else params.delete("q");
       const res = await fetch(`/api/v1/equipment?${params.toString()}`);
       const json = await res.json();
       if (!res.ok)
@@ -98,6 +99,8 @@ function EquipmentContent() {
       setReferences({
         categories: json.references?.equipment_categories || [],
         locations: json.references?.locations || [],
+        assets: json.references?.assets || [],
+        depths: json.references?.depths || [],
       });
     } catch (error) {
       if (sequence === requestSequence.value)
@@ -109,7 +112,7 @@ function EquipmentContent() {
     } finally {
       if (sequence === requestSequence.value) setLoading(false);
     }
-  }, [q, condition, kind, page, requestSequence, status]);
+  }, [q, columnQuery, page, requestSequence]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -199,48 +202,9 @@ function EquipmentContent() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="p-4 rounded-xl bg-white border border-[#E8E2DB] flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#547792] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Cari Nomor Equipment, Nama, Spesifikasi, atau Serial Number..."
-            className="w-full pl-10 pr-4 py-2 text-xs rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-[#F6F4F0]/50 focus:bg-white outline-none focus:border-[#1A3263]"
-          />
-        </div>
-        <select
-          value={kind}
-          onChange={(e) => {
-            setKind(e.target.value);
-            setPage(1);
-          }}
-          className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
-        >
-          <option value="">Semua Jenis Equipment</option>
-          <option value="WHOLE_UNIT">Perangkat Utuh</option>
-          <option value="COMPONENT">Komponen / Sub-Assembly</option>
-          <option value="OTHER">Lainnya</option>
-        </select>
-        <select
-          value={condition}
-          onChange={(e) => {
-            setCondition(e.target.value);
-            setPage(1);
-          }}
-          className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] text-[#1A3263] bg-white"
-        >
-          <option value="">Semua Kondisi Fisik</option>
-          <option value="BAIK">BAIK</option>
-          <option value="RUSAK_RINGAN">RUSAK RINGAN</option>
-          <option value="RUSAK_BERAT">RUSAK BERAT</option>
-          <option value="DALAM_PERBAIKAN">DALAM PERBAIKAN</option>
-        </select>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#E8E2DB] bg-white p-4">
+        <SearchField aria-label="Cari equipment" value={q} onChange={event => {setQ(event.target.value); setPage(1);}} placeholder="Cari nomor, nama, serial, atau spesifikasi…" />
+        <button type="button" onClick={() => {setQ(""); setPage(1); router.push("/equipment",{scroll:false});}} className="rounded-lg border border-[#E8E2DB] px-3 py-2 text-xs font-semibold">Reset tabel</button>
       </div>
 
       {errorMsg && !showCreateModal && (
@@ -264,26 +228,29 @@ function EquipmentContent() {
           <table className="w-full text-left text-xs">
             <thead className="bg-[#E8E2DB]/60 border-b border-[#E8E2DB] text-[#1A3263]">
               <tr>
-                <th className="py-3 px-4 font-bold">No. Equipment</th>
-                <th className="py-3 px-4 font-bold">Nama &amp; Spesifikasi</th>
-                <th className="py-3 px-4 font-bold">Jenis</th>
-                <th className="py-3 px-4 font-bold">Induk Langsung</th>
-                <th className="py-3 px-4 font-bold">Aset Induk (Root)</th>
-                <th className="py-3 px-4 font-bold">Level</th>
-                <th className="py-3 px-4 font-bold">Kondisi</th>
+                <ColumnHeader {...column("No. Equipment", "equipment_no")} />
+                <ColumnHeader {...column("Nama & Spesifikasi", "name")} />
+                <ColumnHeader {...column("Kategori", "category_name", "category_id", [...references.categories.map(r => ({value:r.id,label:r.name})),{value:NONE_VALUE,label:"Tanpa kategori"}])} />
+                <ColumnHeader {...column("Lokasi", "location_name", "location_id", [...references.locations.map(r => ({value:r.id,label:r.name})),{value:NONE_VALUE,label:"Tanpa lokasi"}])} />
+                <ColumnHeader {...column("Jenis", "kind", "kind", kindOptions)} />
+                <ColumnHeader {...column("Induk Langsung", "parent_label", "parent_kind", [{value:"ASSET",label:"Aset SAP"},{value:"EQUIPMENT",label:"Equipment"},{value:NONE_VALUE,label:"Tanpa induk"}])} />
+                <ColumnHeader {...column("Aset Induk (Root)", "root_asset_no", "root_asset_id", [...references.assets.map(r => ({value:r.id,label:r.name})),{value:NONE_VALUE,label:"Tanpa aset induk"}])} />
+                <ColumnHeader {...column("Level", "depth", "depth", references.depths.map(value => ({value:String(value),label:`Level ${value}`})))} />
+                <ColumnHeader {...column("Kondisi", "condition", "condition", physicalOptions)} />
+                <ColumnHeader {...column("Status", "status", "status", equipmentStatusOptions)} />
                 <th className="py-3 px-4 font-bold text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8E2DB]/70">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-[#547792]">
+                  <td colSpan={11} className="py-8 text-center text-[#547792]">
                     Memuat data equipment...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-[#547792]">
+                  <td colSpan={11} className="py-8 text-center text-[#547792]">
                     Tidak ada equipment ditemukan.
                   </td>
                 </tr>
@@ -301,6 +268,8 @@ function EquipmentContent() {
                         </div>
                       )}
                     </td>
+                    <td className="px-4 py-3">{eq.category_name || "Tanpa kategori"}</td>
+                    <td className="px-4 py-3 text-[#547792]">{eq.location_name || "Tanpa lokasi"}</td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
                         {eq.kind === "WHOLE_UNIT"
@@ -338,6 +307,7 @@ function EquipmentContent() {
                         {eq.condition.replace("_", " ")}
                       </span>
                     </td>
+                    <td className="px-4 py-3">{equipmentStatusOptions.find(option => option.value === eq.status)?.label || eq.status}</td>
                     <td className="py-3 px-4 text-right">
                       <Link
                         href={`/equipment/${eq.id}`}
@@ -390,7 +360,7 @@ function EquipmentContent() {
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-[#1A3263]/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#E8E2DB] space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 shadow-xl border border-[#E8E2DB] space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2DB] pb-3">
               <h2 className="text-base font-bold text-[#1A3263]">
                 Tambah Daftar Equipment
