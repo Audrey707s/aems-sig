@@ -1,3 +1,4 @@
+import { pageWindow, DASHBOARD_PAGE_SIZE } from "@/lib/pagination";
 import type { AemsDatabaseState } from "@/lib/db/seed-data";
 import type { Profile } from "@/lib/types/domain";
 export const dashboardCards = [
@@ -28,6 +29,7 @@ export type DashboardFilters = {
   condition: string;
   q: string;
   page: number;
+  activity_page: number;
 };
 export function readDashboardFilters(
   params: URLSearchParams,
@@ -41,6 +43,7 @@ export function readDashboardFilters(
     category: params.get("category") || "",
     condition: params.get("condition") || "",
     q: (params.get("q") || "").trim().slice(0, 120),
+    activity_page: Math.max(1, Number.parseInt(params.get("activity_page") || "1", 10) || 1),
     page: Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1),
   };
 }
@@ -187,9 +190,13 @@ export function buildDashboard(
             ).map(equipmentRow);
   rows.sort((a, b) => a.code.localeCompare(b.code, "id", { numeric: true }));
   const total = rows.length,
-    pageSize = 10,
+    pageSize = DASHBOARD_PAGE_SIZE,
     totalPages = Math.max(1, Math.ceil(total / pageSize)),
     page = Math.min(filter.page, totalPages);
+  const scopedActivities = state.audit_logs
+    .filter(a => actor.role === "ADMIN" || a.actor_id === actor.id)
+    .sort((a,b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at));
+  const activityPagination = pageWindow(scopedActivities.length, filter.activity_page);
   return {
     kpis: {
       assets: assets.length,
@@ -245,9 +252,9 @@ export function buildDashboard(
     open_findings: state.reconciliation_findings.filter(
       (f) => f.status === "OPEN",
     ).length,
-    activities: state.audit_logs
-      .filter((a) => actor.role === "ADMIN" || a.actor_id === actor.id)
-      .slice(0, 5)
+    activity_pagination: activityPagination,
+    activities: scopedActivities
+      .slice(activityPagination.offset, activityPagination.offset + activityPagination.page_size)
       .map((a) => ({
         id: a.id,
         name: a.actor_name,
