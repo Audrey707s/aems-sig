@@ -112,3 +112,10 @@ Dashboard menggunakan enam kartu pilihan tunggal untuk Aset, Equipment, Belum Te
 Angka kartu, grafik dan tabel dihitung pada server dari snapshot dan cakupan filter yang sama. Tabel dipaginasi 10 baris; halaman melampaui batas dikembalikan ke halaman terakhir. Relasi aset tidak hilang hanya karena equipment disembunyikan oleh filter status. Antrean persetujuan mengikuti pengaju/manajer yang ditugaskan; aktivitas Staff hanya miliknya sendiri. Kondisi bermasalah adalah equipment dengan kondisi selain BAIK. Persentase mapping dihitung dari equipment yang terlihat dan telah memiliki root aset.
 
 Halaman aplikasi dan autentikasi memiliki transisi masuk singkat lewat template Next.js, tanpa meremount shell/header/sidebar. Skeleton tersedia saat navigasi halaman aplikasi. Hover/press kartu, perubahan batang grafik dan hasil tabel memiliki animasi singkat. Seluruh animasi dinonaktifkan bila perangkat memilih `prefers-reduced-motion: reduce`.
+
+### Diagram mapping dan tema tampilan
+
+- `/mapping` membuka diagram relasi **aktual**, dengan pilihan aset (mencakup seluruh halaman data), pencarian simpul, buka/tutup cabang, zoom 50–150%, geser kanvas, dan detail simpul. Diagram memakai endpoint hierarki yang sama dengan detail aset; tidak mengubah mapping atau aturan persetujuan. Form pengajuan tetap tersedia pada tab **Ajukan Mapping**.
+- Pilihan **Terang / Gelap / Sistem** tersedia di header semua role serta halaman autentikasi. Preferensi `aems.theme.v1` tersimpan pada browser, mengikuti perubahan OS dalam mode Sistem, dan disinkronkan antar-tab. Script sebelum paint menghindari kilatan tema; penyimpanan browser yang diblokir tetap dapat memakai tema selama tab aktif.
+- Palet aplikasi AEMS tetap navy/steel/amber. Logo memakai bentuk AEMS dan palet ATM: huruf `#0D0F0C`, aksen `#EB232D` pada mode terang; huruf putih dan aksen gelap pada mode gelap. Gambar sumber tetap disimpan dan filter SVG menetapkan warna brand secara tepat.
+- Pencarian universal di header dan halaman Pencarian memakai komponen input yang sama, mengikuti ukuran, border, ikon dan latar pencarian daftar.

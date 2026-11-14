@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, Box, Cpu, GitBranch } from "lucide-react";
+import { Box, Cpu, GitBranch } from "lucide-react";
+
+import { SearchField } from "@/components/ui/SearchField";
 
 type AssetResult = { id: string; sap_asset_no: string; sap_sub_no: string; name: string; status: string; location_name?: string; attached_equipment_count: number; attached_equipment_nos: string[] };
 type EquipmentResult = { id: string; equipment_no: string; name: string; kind: string; condition: string; root_asset_no?: string | null; root_asset_id?: string | null; active_parent_no?: string | null; breadcrumb?: Array<{ id: string; code: string; name: string; kind: string }> };
@@ -26,7 +28,7 @@ function UniversalSearchResults() {
   }, [q]);
   return <div className="space-y-5">
     <div><h1 className="text-2xl font-bold text-[#1A3263]">Pencarian Universal</h1></div>
-    <form action="/search" className="flex gap-2 rounded-xl border bg-white p-3"><Search className="mt-2 h-5 w-5 text-[#547792]" /><input name="q" defaultValue={q} key={q} autoFocus placeholder="Nomor aset, equipment, serial, atau nama..." className="min-w-0 flex-1 px-2 outline-none" /><button className="rounded-lg bg-[#1A3263] px-4 py-2 text-sm font-semibold text-white">Cari</button></form>
+    <form action="/search" className="flex gap-3 rounded-xl border border-[#E8E2DB] bg-white p-4"><SearchField name="q" aria-label="Cari data lintas modul" defaultValue={q} key={q} placeholder="Cari nomor aset, equipment, serial, atau nama…" /><button className="rounded-lg bg-[#1A3263] px-4 py-2 text-xs font-semibold text-white">Cari</button></form>
     {loading && <p role="status">Mencari data...</p>}
     {error && <p role="alert" className="text-red-700">{error}</p>}
     {!q && <p className="text-sm text-[#547792]">Masukkan kata kunci untuk melihat hasil lintas modul.</p>}
