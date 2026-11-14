@@ -20,7 +20,7 @@ describe("Interactive dashboard data consistency", () => {
     for (const card of dashboardCards) {
       const data = run(`card=${card}`);
       expect(data.kpis[card]).toBe(data.pagination.total);
-      expect(data.rows.length).toBe(Math.min(data.kpis[card], 10));
+      expect(data.rows.length).toBe(Math.min(data.kpis[card], 5));
     }
   });
   it("preserves card/list parity when category, status and location filters combine", () => {
@@ -110,7 +110,7 @@ describe("Interactive dashboard data consistency", () => {
       ),
     ).toBe(true);
   });
-  it("paginates beyond ten rows, clamps invalid pages and excludes deleted rows", () => {
+  it("paginates beyond five rows, clamps invalid pages and excludes deleted rows", () => {
     const s = getAemsState(),
       original = s.equipment[0];
     for (let i = 0; i < 15; i++)
@@ -120,7 +120,7 @@ describe("Interactive dashboard data consistency", () => {
         equipment_no: `PAGE-${i}`,
       });
     const page = run("card=equipment&page=2");
-    expect(page.rows).toHaveLength(10);
+    expect(page.rows).toHaveLength(5);
     expect(page.pagination.total).toBe(
       s.equipment.filter((e) => !e.deleted_at).length,
     );

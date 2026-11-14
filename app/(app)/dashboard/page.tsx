@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   LayoutDashboard,
 } from "lucide-react";
+import { PagedPanelList, PanelPagination } from "@/components/dashboard/PanelPagination";
 import { useAuth } from "@/components/ui/AppShell";
 import { readDashboardFilters, type DashboardData } from "@/lib/dashboard";
 const cards = [
@@ -94,6 +95,7 @@ export default function Dashboard() {
   function change(values: Record<string, string>) {
     const next = new URLSearchParams(query);
     next.delete("page");
+    next.delete("activity_page");
     for (const [k, v] of Object.entries(values)) {
       if (v) next.set(k, v);
       else next.delete(k);
@@ -104,6 +106,12 @@ export default function Dashboard() {
       }),
     );
   }
+  function changeActivityPage(page: number) {
+    const next = new URLSearchParams(query);
+    next.set("activity_page", String(page));
+    startTransition(() => router.push(`/dashboard?${next}`, {scroll: false}));
+  }
+  const chartScope = [filters.status, filters.location, filters.category, filters.condition, filters.q].join("|");
   const busy = loading || pending,
     selected = cards.find((c) => c.id === filters.card)!;
   const totalConditions =
@@ -309,18 +317,13 @@ export default function Dashboard() {
               className="grid gap-5 xl:grid-cols-3"
               aria-label="Distribusi data"
             >
-              <div className="dashboard-panel">
+              <div className="dashboard-panel flex flex-col">
                 <h2 className="dashboard-heading">
                   <Tags size={16} />
                   Aset per kategori
                 </h2>
-                <div className="mt-5 space-y-3">
-                  {!data.charts.categories.length ? (
-                    <p className="dashboard-empty">
-                      Tidak ada aset sesuai filter.
-                    </p>
-                  ) : (
-                    data.charts.categories.map((c) => (
+                <PagedPanelList key={`categories-${chartScope}`} label="Aset per kategori" items={data.charts.categories} href="/master-data/categories" empty="Tidak ada aset sesuai filter." listClassName="mt-5 space-y-3">
+                  {(c) => (
                       <button
                         key={c.id}
                         aria-pressed={filters.category === c.id}
@@ -345,9 +348,8 @@ export default function Dashboard() {
                           />
                         </span>
                       </button>
-                    ))
                   )}
-                </div>
+                </PagedPanelList>
               </div>
               <div className="dashboard-panel">
                 <h2 className="dashboard-heading">
@@ -412,18 +414,13 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              <div className="dashboard-panel">
+              <div className="dashboard-panel flex flex-col">
                 <h2 className="dashboard-heading">
                   <MapPin size={16} />
                   Sebaran lokasi
                 </h2>
-                <div className="mt-4 max-h-64 space-y-1 overflow-y-auto">
-                  {!data.charts.locations.length ? (
-                    <p className="dashboard-empty">
-                      Tidak ada lokasi sesuai filter.
-                    </p>
-                  ) : (
-                    data.charts.locations.map((l) => (
+                <PagedPanelList key={`locations-${chartScope}`} label="Sebaran lokasi" items={data.charts.locations} href="/master-data/locations" empty="Tidak ada lokasi sesuai filter." listClassName="mt-4 space-y-1">
+                  {(l) => (
                       <button
                         key={l.id}
                         aria-pressed={filters.location === l.id}
@@ -444,9 +441,8 @@ export default function Dashboard() {
                           </span>
                         </span>
                       </button>
-                    ))
                   )}
-                </div>
+                </PagedPanelList>
               </div>
             </section>
             <section
@@ -602,12 +598,12 @@ export default function Dashboard() {
               </footer>
             </section>
             <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-              <div className="dashboard-panel">
+              <div className="dashboard-panel flex flex-col">
                 <h2 className="dashboard-heading">
                   <Activity size={16} />
                   Aktivitas terbaru
                 </h2>
-                <div className="mt-3 divide-y">
+                <div className="mt-3 flex-1 divide-y" aria-label="Daftar Aktivitas terbaru">
                   {data.activities.length ? (
                     data.activities.map((a) => (
                       <div
@@ -650,6 +646,7 @@ export default function Dashboard() {
                     <p className="dashboard-empty">Belum ada aktivitas.</p>
                   )}
                 </div>
+                <PanelPagination label="Aktivitas terbaru" pagination={data.activity_pagination} onPage={changeActivityPage} href={can("audit:view_full") ? "/admin/audit" : undefined} busy={busy} />
               </div>
               <div className="dashboard-panel">
                 <h2 className="dashboard-heading">

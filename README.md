@@ -127,3 +127,9 @@ Halaman aplikasi dan autentikasi memiliki transisi masuk singkat lewat template 
 - Panel filter dirender di luar pembungkus tabel agar tidak terpotong saat tabel digeser. Mendukung pencarian pilihan, keyboard, Escape, klik di luar panel, serta tema terang/gelap.
 - Halaman Pengaturan memakai seluruh lebar area konten, mengikuti ukuran layar.
 - **Sub-aset SAP** (sebelumnya Sub/Sub-No) membedakan bagian aset dengan nomor utama SAP yang sama. Tetap dipertahankan pada identitas database, impor dan laporan agar data berbeda tidak tertimpa. Aset utama menggunakan `0000`; input pembuatan yang dikosongkan memakai nilai tersebut. Tidak ada penghapusan atau perubahan kunci data lama.
+
+### Pagination panel dashboard
+
+Panel **Aset per kategori**, **Sebaran lokasi**, **Aktivitas terbaru**, serta tabel hasil dashboard menampilkan maksimal **5 item per halaman**. Tombol panah sebelumnya/berikutnya menunjukkan sisa data melalui rentang dan total item. Kategori dan lokasi memiliki tautan ke Master Data terkait; tautan aktivitas lengkap ke Audit Trail hanya tersedia untuk pengguna dengan izin audit penuh.
+
+Halaman kategori/lokasi terpisah satu sama lain dan kembali ke awal ketika filter distribusi berubah. Aktivitas dipaginasi di server dengan `activity_page`, diurutkan terbaru dahulu, dan dibatasi pada aktivitas yang boleh dilihat pengguna. Pergantian halaman aktivitas mempertahankan filter dan halaman tabel hasil; riwayat lama tidak lagi terpotong pada lima catatan pertama.
