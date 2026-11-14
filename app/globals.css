@@ -84,3 +84,19 @@ main tbody tr { transition: background-color 120ms ease; }
 .aems-auth-page h1 {
   font-family: "AEMS Auth Inter", Inter, system-ui, -apple-system, sans-serif;
 }
+
+/* Route templates remount only content, preserving the authenticated shell. */
+.aems-route-enter { animation: aems-route-in 240ms cubic-bezier(.2,.7,.2,1) both; }
+.dashboard-card { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+.dashboard-card:active { transform: scale(.985); }
+@media (hover: hover) and (pointer: fine) { .dashboard-card:hover { transform: translateY(-2px); box-shadow: 0 5px 14px #1a32630a; } }
+.dashboard-panel { padding: 1.25rem; border: 1px solid #E8E2DB; border-radius: .75rem; background: white; min-width: 0; }
+.dashboard-heading { display: flex; align-items: center; gap: .5rem; font-size: .875rem; font-weight: 600; color: #1A3263; }
+.dashboard-empty { padding: 1.5rem .25rem; font-size: .8rem; color: #64748b; }
+.dashboard-bar { transition: width 320ms cubic-bezier(.2,.7,.2,1); }
+.dashboard-table-enter { animation: aems-table-in 160ms ease-out; }
+.dashboard-skeleton { animation: aems-skeleton 1.3s ease-in-out infinite alternate; }
+@keyframes aems-route-in { from { opacity: .35; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@keyframes aems-table-in { from { opacity: .6; } to { opacity: 1; } }
+@keyframes aems-skeleton { to { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .aems-route-enter, .dashboard-card, .dashboard-bar, .dashboard-table-enter, .dashboard-skeleton { animation: none !important; transition: none !important; transform: none !important; } }

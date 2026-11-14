@@ -103,3 +103,12 @@ Menu Profil tersedia di Pengaturan dan menjadi tab pertama Master Data. Halaman 
 Ubah email memakai konfirmasi Supabase Auth, tidak mengganti `profiles.email` sebelum alamat aktif terverifikasi. Endpoint profil menyinkronkan email aktif dari `auth.getUser()` hanya untuk ID pemilik yang sama; role dan riwayat tetap utuh. Status `new_email` ditampilkan sebagai menunggu verifikasi. Konfirmasi mengikuti kebijakan Supabase (email lama dan baru bila Secure Email Change aktif). Jangan memaksa konfirmasi melalui SQL atau `email_confirm`.
 
 Ubah password dari Profil mengirim recovery ke email identitas yang sedang login, tanpa menerima penerima dari browser. Link membuka alur recovery yang telah memiliki bukti sekali pakai/masa berlaku. Login biasa tidak cukup untuk mereset password. Tambahkan `https://aems-sig.vercel.app/auth/email-change` dan `/auth/recovery` ke daftar Redirect URLs Supabase. Verifikasi produksi memerlukan SMTP aktif dan penerima menyelesaikan pesan email; build/test tidak membuktikan pengiriman email ataupun perubahan tiga akun selesai.
+
+
+## Dashboard interaktif dan transisi
+
+Dashboard menggunakan enam kartu pilihan tunggal untuk Aset, Equipment, Belum Termapping, Aset Tanpa Equipment, Kondisi Bermasalah, dan Menunggu Persetujuan. Kartu memfilter tabel pada dashboard; grafik kategori/kondisi/lokasi juga dapat diklik. Filter status, lokasi beserta seluruh turunannya, kategori, pencarian, kartu dan halaman disimpan dalam URL sehingga refresh serta Back/Forward mempertahankan pilihan. Reset filter tidak mengubah pilihan kartu.
+
+Angka kartu, grafik dan tabel dihitung pada server dari snapshot dan cakupan filter yang sama. Tabel dipaginasi 10 baris; halaman melampaui batas dikembalikan ke halaman terakhir. Relasi aset tidak hilang hanya karena equipment disembunyikan oleh filter status. Antrean persetujuan mengikuti pengaju/manajer yang ditugaskan; aktivitas Staff hanya miliknya sendiri. Kondisi bermasalah adalah equipment dengan kondisi selain BAIK. Persentase mapping dihitung dari equipment yang terlihat dan telah memiliki root aset.
+
+Halaman aplikasi dan autentikasi memiliki transisi masuk singkat lewat template Next.js, tanpa meremount shell/header/sidebar. Skeleton tersedia saat navigasi halaman aplikasi. Hover/press kartu, perubahan batang grafik dan hasil tabel memiliki animasi singkat. Seluruh animasi dinonaktifkan bila perangkat memilih `prefers-reduced-motion: reduce`.
