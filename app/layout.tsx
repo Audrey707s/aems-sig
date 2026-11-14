@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { themeBootstrap } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "AEMS — Asset & Equipment Management System",
@@ -13,9 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{__html: themeBootstrap}} /></head>
       <body className="min-h-screen bg-[#F6F4F0] text-[#1A3263] antialiased">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

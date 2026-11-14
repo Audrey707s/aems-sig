@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MappingDiagram } from "@/components/hierarchy/MappingDiagram";
 import { canReviewRequest } from "@/lib/permissions/rbac";
 import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -25,18 +26,21 @@ function MappingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTab =
-    searchParams.get("tab") === "inbox"
+    searchParams.get("tab") === "diagram"
+      ? "diagram"
+      : searchParams.get("tab") === "inbox"
       ? "inbox"
       : searchParams.get("tab") === "history"
         ? "history"
-        : "create";
+        : searchParams.get("tab") === "create" || searchParams.has("equipmentId") || searchParams.has("assetId")
+          ? "create" : "diagram";
   const preselectedEquipmentId = searchParams.get("equipmentId") || "";
   const preselectedAssetId = searchParams.get("assetId") || "";
 
   const activeTab = initialTab;
-  const setActiveTab = (next: "create" | "inbox" | "history") => {
+  const setActiveTab = (next: "diagram" | "create" | "inbox" | "history") => {
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "create") params.delete("tab");
+    if (next === "diagram") params.delete("tab");
     else params.set("tab", next);
     router.push(`/mapping${params.size ? `?${params}` : ""}`, {
       scroll: false,
@@ -204,7 +208,8 @@ function MappingContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
             Mapping &amp; Hierarki
@@ -217,8 +222,10 @@ function MappingContent() {
         >
           Import Mapping Awal / Massal
         </Link>
+        </div>
         {/* Tab Selector */}
-        <div className="inline-flex rounded-xl bg-white p-1 border border-[#E8E2DB] shadow-xs">
+        <div className="flex flex-wrap gap-1 rounded-xl bg-white p-1 border border-[#E8E2DB] shadow-xs">
+          <button type="button" onClick={() => setActiveTab("diagram")} aria-pressed={activeTab === "diagram"} className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold transition ${activeTab === "diagram" ? "bg-[#1A3263] text-[#FAB95B]" : "text-[#547792] hover:text-[#1A3263]"}`}><GitBranch className="h-3.5 w-3.5" />Diagram</button>
           <button
             type="button"
             onClick={() => setActiveTab("create")}
@@ -272,6 +279,8 @@ function MappingContent() {
           <span className="font-semibold">{feedback.text}</span>
         </div>
       )}
+
+      {activeTab === "diagram" && <MappingDiagram initialAssetId={preselectedAssetId} revision={requests} />}
 
       {/* TAB 1: CREATE MAPPING REQUEST */}
       {activeTab === "create" && (

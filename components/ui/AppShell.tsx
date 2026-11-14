@@ -9,7 +9,9 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { AemsLogo } from "@/components/ui/AemsLogo";
+import { ThemeSwitcher } from "@/components/theme/ThemeProvider";
+import { SearchField } from "@/components/ui/SearchField";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -268,18 +270,10 @@ export function AppShell({
       </a>
       <div className="min-h-screen flex flex-col bg-[#F6F4F0] text-[#1A3263]">
         {/* Top Navigation Bar — Brand Navy #1A3263 with Amber #FAB95B bottom accent */}
-        <header className="sticky top-0 z-30 h-16 bg-[#1A3263] text-white shadow-md border-b-2 border-[#FAB95B] flex items-center justify-between px-4 lg:px-6">
+        <header className="aems-topbar sticky top-0 z-30 h-16 bg-[#1A3263] text-white shadow-md border-b-2 border-[#FAB95B] flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-3 group">
-              <div className="bg-white rounded-lg px-2.5 py-1 shadow-sm flex items-center justify-center border border-[#E8E2DB] transition group-hover:scale-[1.02]">
-                <Image
-                  src="/logo-aems.png"
-                  width={140}
-                  height={40}
-                  alt="AEMS Logo"
-                  className="h-7 w-auto object-contain"
-                />
-              </div>
+              <span className="aems-brand-surface rounded-lg bg-white px-2.5 py-1.5"><AemsLogo className="w-24" /></span>
               <div className="hidden sm:block">
                 <div className="font-bold tracking-tight text-sm leading-tight text-white">
                   Asset &amp; Equipment Management
@@ -296,20 +290,12 @@ export function AppShell({
             onSubmit={handleGlobalSearch}
             className="hidden md:flex items-center flex-1 max-w-md mx-6"
           >
-            <div className="relative w-full">
-              <Search className="w-4 h-4 text-[#E8E2DB]/70 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                placeholder="Cari No. Aset SAP, No. Equipment, Serial, atau Nama..."
-                className="w-full pl-10 pr-4 py-1.5 text-sm rounded-lg bg-white/10 hover:bg-white/15 focus:bg-white focus:text-[#1A3263] placeholder-[#E8E2DB]/70 focus:placeholder-[#547792] outline-none transition border border-white/15 focus:border-[#FAB95B]"
-              />
-            </div>
+            <SearchField aria-label="Pencarian universal" value={globalSearch} onChange={e => setGlobalSearch(e.target.value)} placeholder="Cari aset, equipment, serial, atau nama…" />
           </form>
 
           {/* Right Action Controls: Reset Data & Active User Switcher */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSwitcher />
             {demoControlsEnabled && (
               <button
                 type="button"
