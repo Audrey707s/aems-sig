@@ -94,3 +94,12 @@ Spesifikasi yang belum dipromosikan memiliki tombol **Ubah Spesifikasi** (nama, 
 - Role internal tetap ADMIN/ACCOUNTING/MAINTENANCE. Kolom `account_level` membedakan MANAGER/STAFF, `manager_id` menetapkan atasan dalam bagian yang sama. Registrasi tidak memberikan peran manajer; Admin menetapkan jabatan dan atasan. Halaman Organisasi menampilkan manajer dan staff di bawahnya.
 - LINK langsung diterapkan tanpa persetujuan. MOVE/UNLINK oleh Staff masuk ke Manajer aktif yang ditetapkan pada `approver_id`; Manajer bagian lain tidak boleh memutuskan. Manajer/Admin dapat menerapkan perubahan langsung. Peninjauan pengajuan sendiri ditolak. Admin dapat menangani pengajuan lama yang belum memiliki manajer peninjau.
 - Terapkan migrasi `20261112184729_organization_review_hierarchy.sql` sebelum merilis kode. Migrasi hanya menambahkan kolom/index/validasi, tanpa mengubah jabatan pengguna lama; akun lama menjadi Staff dan membutuhkan penetapan Manajer oleh Admin sebelum mengajukan MOVE/UNLINK. Riwayat pengajuan dipertahankan.
+
+
+## Profil untuk semua role
+
+Menu Profil tersedia di Pengaturan dan menjadi tab pertama Master Data. Halaman mengikuti susunan ATM dengan warna AEMS: banner, avatar inisial, nama/email, formulir dua kolom, serta Keamanan Akun. Pengguna hanya mengubah nama sendiri; role, unit, atasan dan status tetap dikelola Admin. Perubahan nama dicatat dan dilindungi konflik versi.
+
+Ubah email memakai konfirmasi Supabase Auth, tidak mengganti `profiles.email` sebelum alamat aktif terverifikasi. Endpoint profil menyinkronkan email aktif dari `auth.getUser()` hanya untuk ID pemilik yang sama; role dan riwayat tetap utuh. Status `new_email` ditampilkan sebagai menunggu verifikasi. Konfirmasi mengikuti kebijakan Supabase (email lama dan baru bila Secure Email Change aktif). Jangan memaksa konfirmasi melalui SQL atau `email_confirm`.
+
+Ubah password dari Profil mengirim recovery ke email identitas yang sedang login, tanpa menerima penerima dari browser. Link membuka alur recovery yang telah memiliki bukti sekali pakai/masa berlaku. Login biasa tidak cukup untuk mereset password. Tambahkan `https://aems-sig.vercel.app/auth/email-change` dan `/auth/recovery` ke daftar Redirect URLs Supabase. Verifikasi produksi memerlukan SMTP aktif dan penerima menyelesaikan pesan email; build/test tidak membuktikan pengiriman email ataupun perubahan tiga akun selesai.

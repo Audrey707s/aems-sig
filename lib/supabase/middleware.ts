@@ -3,7 +3,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "./client";
 import { AEMS_SESSION_COOKIE } from "@/lib/auth/constants";
 
-const PUBLIC_PATHS = ["/login", "/register", "/pending-approval", "/auth/callback", "/auth/confirm", "/forgot-password", "/reset-password", "/auth/recovery", "/api/v1/auth/forgot-password", "/api/v1/auth/session", "/api/v1/auth/register"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/pending-approval",
+  "/auth/callback",
+  "/auth/confirm",
+  "/auth/email-change",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/recovery",
+  "/api/v1/auth/forgot-password",
+  "/api/v1/auth/session",
+  "/api/v1/auth/register",
+];
 
 export async function updateSessionAndProtectRoutes(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -30,16 +43,16 @@ export async function updateSessionAndProtectRoutes(request: NextRequest) {
             name: string;
             value: string;
             options: CookieOptions;
-          }>
+          }>,
         ) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
@@ -67,7 +80,11 @@ export async function updateSessionAndProtectRoutes(request: NextRequest) {
 
   // Local / Hybrid mode: check AEMS session cookie if explicitly logged out
   const sessionCookie = request.cookies.get(AEMS_SESSION_COOKIE)?.value;
-  if (sessionCookie === "UNAUTHENTICATED" && !isPublicPath && !pathname.startsWith("/api/")) {
+  if (
+    sessionCookie === "UNAUTHENTICATED" &&
+    !isPublicPath &&
+    !pathname.startsWith("/api/")
+  ) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);

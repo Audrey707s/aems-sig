@@ -19,6 +19,7 @@ import {
   BarChart3,
   ShieldAlert,
   Settings,
+  UserRound,
   ClipboardList,
   LogOut,
   ChevronDown,
@@ -129,7 +130,10 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   },
   {
     title: "PENGATURAN",
-    items: [{ label: "Master Data", href: "/master-data", icon: Settings }],
+    items: [
+      { label: "Profil", href: "/profile", icon: UserRound },
+      { label: "Master Data", href: "/master-data", icon: Settings },
+    ],
   },
 ];
 
@@ -404,7 +408,7 @@ export function AppShell({
                       onClick={() => setRoleDropdownOpen(false)}
                       className="block px-3.5 py-2 text-xs text-[#1A3263] hover:bg-[#F6F4F0] font-medium"
                     >
-                      Profil &amp; Hak Akses Saya
+                      Profil
                     </Link>
                     <button
                       type="button"
