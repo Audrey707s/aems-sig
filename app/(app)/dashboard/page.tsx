@@ -1,466 +1,704 @@
 "use client";
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/components/ui/AppShell";
 import {
   Box,
   Cpu,
   Unlink,
+  Link2,
+  Wrench,
   Clock,
+  RefreshCw,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+  SlidersHorizontal,
+  MapPin,
+  Tags,
+  Activity,
   GitBranch,
   FileSpreadsheet,
   ShieldAlert,
+  LayoutDashboard,
 } from "lucide-react";
-
-interface DashboardSummary {
-  kpis: {
-    total_assets: number;
-    total_equipment: number;
-    unmapped_equipment: number;
-    assets_without_equipment: number;
-    pending_mapping_requests: number;
-    open_reconciliation_findings: number;
-  };
-  assets_by_category: Array<{ category: string; count: number }>;
-  equipment_by_condition: Array<{ condition: string; count: number }>;
-  assets_by_location: Array<{
-    location: string;
-    assets: number;
-    equipment: number;
-  }>;
-  recent_activities: Array<{
-    id: number;
-    occurred_at: string;
-    actor_name: string;
-    actor_role: string;
-    entity_type: string;
-    entity_code: string;
-    action: string;
-  }>;
-}
-
-export default function DashboardPage() {
-  const { can, user } = useAuth();
-  const [error, setError] = useState("");
-  const [data, setData] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
-
+import { useAuth } from "@/components/ui/AppShell";
+import { readDashboardFilters, type DashboardData } from "@/lib/dashboard";
+const cards = [
+  { id: "assets", label: "Total Aset SAP", icon: Box },
+  { id: "equipment", label: "Total Equipment", icon: Cpu },
+  { id: "unmapped", label: "Belum Termapping", icon: Unlink },
+  { id: "without-equipment", label: "Aset Tanpa Equipment", icon: Link2 },
+  { id: "condition", label: "Kondisi Bermasalah", icon: Wrench },
+  { id: "pending", label: "Menunggu Persetujuan", icon: Clock },
+] as const;
+const colors = ["#547792", "#FAB95B", "#dc6047", "#1A3263"];
+const human = (s: string) =>
+  ({
+    ACTIVE: "Aktif",
+    INACTIVE: "Nonaktif",
+    DISPOSED: "Dilepas",
+    SUBMITTED: "Menunggu review",
+    BAIK: "Baik",
+    RUSAK_RINGAN: "Rusak ringan",
+    RUSAK_BERAT: "Rusak berat",
+    DALAM_PERBAIKAN: "Dalam perbaikan",
+  })[s] || s.replaceAll("_", " ");
+const field =
+  "min-w-0 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2.5 text-sm text-[#1A3263]";
+export default function Dashboard() {
+  const params = useSearchParams(),
+    router = useRouter(),
+    query = params.toString(),
+    filters = readDashboardFilters(new URLSearchParams(query));
+  const { user, can } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [reload, setReload] = useState(0),
+    [search, setSearch] = useState(filters.q),
+    [updated, setUpdated] = useState("");
+  const [pending, startTransition] = useTransition();
   useEffect(() => {
     const ctrl = new AbortController();
     setLoading(true);
     setError("");
-    fetch(
-      `/api/v1/dashboard/summary${statusFilter ? `?status=${statusFilter}` : ""}`,
-      { signal: ctrl.signal },
-    )
+    fetch(`/api/v1/dashboard/summary?${query}`, {
+      signal: ctrl.signal,
+      cache: "no-store",
+    })
       .then(async (r) => {
-        const body = await r.json();
-        if (!r.ok)
-          throw new Error(body.error?.message || "Dashboard gagal dimuat.");
-        return body;
+        const b = await r.json();
+        if (!r.ok) throw Error(b.error?.message || "Dashboard gagal dimuat.");
+        if (!ctrl.signal.aborted) {
+          setData(b.data);
+          setUpdated(
+            new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          );
+        }
       })
-      .then((res) => setData(res.data))
       .catch((e) => {
-        if (e.name !== "AbortError")
-          setError("Dashboard gagal dimuat. Silakan muat ulang halaman.");
+        if (!ctrl.signal.aborted) setError(e.message);
       })
       .finally(() => {
         if (!ctrl.signal.aborted) setLoading(false);
       });
     return () => ctrl.abort();
-  }, [statusFilter]);
-
-  if (error)
-    return (
-      <div role="alert" className="rounded-xl border bg-white p-6">
-        {error}{" "}
-        <button
-          onClick={() => window.location.reload()}
-          className="ml-3 underline"
-        >
-          Coba kembali
-        </button>
-      </div>
-    );
-
-  if (loading || !data) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-64 bg-[#E8E2DB] rounded-lg" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
-              className="h-28 bg-white rounded-xl border border-[#E8E2DB]"
-            />
-          ))}
-        </div>
-      </div>
+  }, [query, reload]);
+  useEffect(() => setSearch(filters.q), [filters.q]);
+  function change(values: Record<string, string>) {
+    const next = new URLSearchParams(query);
+    next.delete("page");
+    for (const [k, v] of Object.entries(values)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
+    startTransition(() =>
+      router.push(`/dashboard${next.size ? `?${next}` : ""}`, {
+        scroll: false,
+      }),
     );
   }
-
-  const maxCatCount = Math.max(
-    ...data.assets_by_category.map((c) => c.count),
-    1,
+  const busy = loading || pending,
+    selected = cards.find((c) => c.id === filters.card)!;
+  const totalConditions =
+    data?.charts.conditions.reduce((n, c) => n + c.count, 0) || 0;
+  let start = 0;
+  const segments = (data?.charts.conditions || []).map((c, i) => {
+    const end =
+        start + (totalConditions ? (c.count / totalConditions) * 100 : 0),
+      segment = `${colors[i]} ${start}% ${end}%`;
+    start = end;
+    return segment;
+  });
+  const filtered = !!(
+    filters.status ||
+    filters.location ||
+    filters.category ||
+    filters.condition ||
+    filters.q
   );
-
   return (
-    <div className="space-y-6">
-      {/* Header & Global Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A3263]">
-            Dashboard Eksekutif
+          <p className="mb-1 text-sm text-[#547792]">
+            Selamat datang, {user?.full_name.split(" ")[0]}
+          </p>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1A3263]">
+            <LayoutDashboard className="h-6 w-6" />
+            Dashboard
           </h1>
         </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#E8E2DB] bg-white text-[#1A3263] focus:outline-none focus:border-[#547792]"
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-500" aria-live="off">
+            {updated && `Diperbarui ${updated}`}
+          </span>
+          <button
+            onClick={() => setReload((n) => n + 1)}
+            disabled={busy}
+            className={`${field} inline-flex items-center gap-2`}
           >
-            <option value="">Semua Status Siklus Hidup</option>
-            <option value="ACTIVE">Hanya Status: ACTIVE</option>
-            <option value="INACTIVE">Hanya Status: INACTIVE</option>
-          </select>
+            <RefreshCw size={15} className={busy ? "animate-spin" : ""} />
+            Muat ulang
+          </button>
         </div>
-      </div>
-
-      {/* 4 Primary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href={statusFilter ? `/assets?status=${statusFilter}` : "/assets"}
-          className="group p-5 rounded-xl bg-white border border-[#E8E2DB] hover:border-[#1A3263] shadow-sm transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
-              Total Aset SAP
-            </span>
-            <span className="p-2 rounded-lg bg-[#E8EEF7] text-[#1A3263]">
-              <Box className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-[#1A3263]">
-              {data.kpis.total_assets}
-            </span>
-            <span className="text-xs font-semibold text-[#547792] group-hover:text-[#1A3263] inline-flex items-center gap-0.5">
-              Lihat Aset <ArrowUpRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-        </Link>
-
-        <Link
-          href={
-            statusFilter ? `/equipment?status=${statusFilter}` : "/equipment"
-          }
-          className="group p-5 rounded-xl bg-white border border-[#E8E2DB] hover:border-[#547792] shadow-sm transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
-              Total Equipment
-            </span>
-            <span className="p-2 rounded-lg bg-[#EDF2F6] text-[#547792]">
-              <Cpu className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-[#1A3263]">
-              {data.kpis.total_equipment}
-            </span>
-            <span className="text-xs font-semibold text-[#547792] group-hover:text-[#1A3263] inline-flex items-center gap-0.5">
-              Lihat Equipment <ArrowUpRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-        </Link>
-
-        <Link
-          href="/equipment/unmapped"
-          className="group p-5 rounded-xl bg-white border border-[#E8E2DB] hover:border-[#FAB95B] shadow-sm transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
-              Equipment Belum Termapping
-            </span>
-            <span className="p-2 rounded-lg bg-[#FEF6E7] text-[#8A580C]">
-              <Unlink className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-[#1A3263]">
-              {data.kpis.unmapped_equipment}
-            </span>
-            <span className="text-xs font-semibold text-[#8A580C] inline-flex items-center gap-0.5">
-              Tinjau Antrean <ArrowUpRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-        </Link>
-
-        <Link
-          href={
-            can("mapping:approve")
-              ? "/mapping?tab=inbox"
-              : "/mapping?tab=history"
-          }
-          className="group p-5 rounded-xl bg-[#1A3263] text-white border border-[#1A3263] shadow-sm transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#E8E2DB]">
-              Menunggu Persetujuan
-            </span>
-            <span className="p-2 rounded-lg bg-white/10 text-[#FAB95B]">
-              <Clock className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-[#FAB95B]">
-              {data.kpis.pending_mapping_requests}
-            </span>
-            <span className="text-xs font-semibold text-[#E8E2DB] group-hover:text-[#FAB95B] inline-flex items-center gap-0.5">
-              Kotak Masuk <ArrowUpRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-        </Link>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Bar Chart: Asset by Category */}
-        <div className="p-5 rounded-xl bg-white border border-[#E8E2DB] shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-[#1A3263]">
-              Aset per Kategori
-            </h2>
-            <span className="text-[11px] font-medium text-[#547792]">
-              Distribusi Unit
-            </span>
-          </div>
-          <div className="space-y-3">
-            {data.assets_by_category.map((item) => (
-              <Link
-                key={item.category}
-                href={`/assets?q=${encodeURIComponent(item.category)}${statusFilter ? `&status=${statusFilter}` : ""}`}
-                className="cursor-pointer group"
-              >
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-[#1A3263] group-hover:text-[#547792] transition">
-                    {item.category}
-                  </span>
-                  <span className="font-bold text-[#1A3263]">
-                    {item.count} unit
-                  </span>
-                </div>
-                <div className="w-full h-2.5 bg-[#F6F4F0] rounded-full overflow-hidden border border-[#E8E2DB]">
-                  <div
-                    className="h-full bg-[#1A3263] group-hover:bg-[#547792] rounded-full transition-all"
-                    style={{
-                      width: `${Math.max((item.count / maxCatCount) * 100, 12)}%`,
-                    }}
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Condition Breakdown */}
-        <div className="p-5 rounded-xl bg-white border border-[#E8E2DB] shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-[#1A3263]">
-              Equipment per Kondisi Fisik
-            </h2>
-            <span className="text-[11px] font-medium text-[#547792]">
-              Status Teknis
-            </span>
-          </div>
-          <div className="space-y-3">
-            {data.equipment_by_condition.map((c) => (
-              <Link
-                key={c.condition}
-                href={`/equipment?condition=${encodeURIComponent(c.condition)}`}
-                className="flex items-center justify-between p-3 rounded-lg bg-[#F6F4F0] hover:bg-[#E8E2DB]/60 border border-[#E8E2DB] cursor-pointer transition"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      c.condition === "BAIK"
-                        ? "bg-[#547792]"
-                        : c.condition === "RUSAK_RINGAN"
-                          ? "bg-[#FAB95B]"
-                          : "bg-[#1A3263]"
-                    }`}
-                  />
-                  <span className="text-xs font-semibold text-[#1A3263]">
-                    {c.condition.replace("_", " ")}
-                  </span>
-                </div>
-                <span className="text-sm font-bold text-[#1A3263]">
-                  {c.count} unit
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Distribution by Location */}
-        <div className="p-5 rounded-xl bg-white border border-[#E8E2DB] shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-[#1A3263]">
-              Sebaran Lokasi Pabrik &amp; Gudang
-            </h2>
-            <span className="text-[11px] font-medium text-[#547792]">
-              Aset &amp; Equipment
-            </span>
-          </div>
-          <div className="space-y-2.5">
-            {data.assets_by_location.map((loc) => (
-              <Link
-                key={loc.location}
-                href={`/reports?report=all-equipment&q=${encodeURIComponent(loc.location)}`}
-                className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[#F6F4F0] cursor-pointer text-xs border-b border-[#E8E2DB]/60 last:border-0"
-              >
-                <span className="font-semibold text-[#1A3263]">
-                  {loc.location}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-semibold">
-                    {loc.assets} Aset
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
-                    {loc.equipment} Eqp
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row: Recent Activities & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-5 rounded-xl bg-white border border-[#E8E2DB] shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-[#1A3263]">
-              Aktivitas Terbaru
-            </h2>
-            {can("audit:view_full") && (
-              <Link
-                href="/admin/audit"
-                className="text-xs text-[#547792] hover:text-[#1A3263] font-bold"
-              >
-                Lihat Audit Trail →
-              </Link>
-            )}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#E8E2DB] text-[#547792] bg-[#F6F4F0]">
-                  <th className="py-2.5 px-3 font-bold">Waktu</th>
-                  <th className="py-2.5 px-3 font-bold">Pelaku</th>
-                  <th className="py-2.5 px-3 font-bold">Entitas</th>
-                  <th className="py-2.5 px-3 font-bold">Tindakan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E8E2DB]/60">
-                {data.recent_activities.map((act) => (
-                  <tr key={act.id} className="hover:bg-[#F6F4F0]/50">
-                    <td className="py-2.5 px-3 text-[#547792] whitespace-nowrap">
-                      {new Date(act.occurred_at).toLocaleString("id-ID")}
-                    </td>
-                    <td className="py-2.5 px-3 font-semibold text-[#1A3263]">
-                      {act.actor_name}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <span className="font-mono font-bold px-2 py-0.5 rounded bg-[#E8E2DB]/60 text-[#1A3263]">
-                        {act.entity_type}: {act.entity_code}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 font-bold text-[#547792]">
-                      {act.action}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Quick Actions Card */}
-        <div className="p-5 rounded-xl bg-white border border-[#E8E2DB] shadow-sm space-y-3">
-          <h2 className="text-sm font-bold text-[#1A3263]">Aksi Cepat</h2>
-          <Link
-            href="/mapping"
-            className="flex items-center justify-between p-3.5 rounded-xl border border-[#E8E2DB] bg-[#F6F4F0]/60 hover:border-[#1A3263] hover:bg-[#E8EEF7]/40 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#1A3263] text-[#FAB95B]">
-                <GitBranch className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-[#1A3263]">
-                  Workspace Mapping &amp; Hierarki
-                </div>
-                <div className="text-[11px] text-[#547792]">
-                  Hubungkan atau pindahkan equipment
-                </div>
-              </div>
-            </div>
-            <ArrowUpRight className="w-4 h-4 text-[#547792]" />
-          </Link>
-
-          <Link
-            href={
-              user?.role === "MAINTENANCE"
-                ? "/equipment/import"
-                : "/assets/import"
-            }
-            className="flex items-center justify-between p-3.5 rounded-xl border border-[#E8E2DB] bg-[#F6F4F0]/60 hover:border-[#547792] hover:bg-[#EDF2F6]/60 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#547792] text-white">
-                <FileSpreadsheet className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-[#1A3263]">
-                  Import Massal Excel (.xlsx)
-                </div>
-                <div className="text-[11px] text-[#547792]">
-                  Pratinjau &amp; validasi bertahap
-                </div>
-              </div>
-            </div>
-            <ArrowUpRight className="w-4 h-4 text-[#547792]" />
-          </Link>
-
-          {can("reconciliation:read") && (
-            <Link
-              href="/admin/reconciliation"
-              className="flex items-center justify-between p-3.5 rounded-xl border border-[#E8E2DB] bg-[#F6F4F0]/60 hover:border-[#FAB95B] hover:bg-[#FEF6E7]/60 transition"
+      </header>
+      <section
+        aria-label="Filter dashboard"
+        className="rounded-xl border border-[#E8E2DB] bg-white p-4"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <SlidersHorizontal size={15} />
+            Filter data
+          </h2>
+          {filtered && (
+            <button
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#1A3263]"
+              onClick={() => {
+                setSearch("");
+                change({
+                  status: "",
+                  location: "",
+                  category: "",
+                  condition: "",
+                  q: "",
+                });
+              }}
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#FAB95B] text-[#1A3263]">
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-[#1A3263]">
-                    Rekonsiliasi ({data.kpis.open_reconciliation_findings}{" "}
-                    Temuan)
-                  </div>
-                  <div className="text-[11px] text-[#547792]">
-                    Periksa kualitas dan integritas data
-                  </div>
-                </div>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-[#547792]" />
-            </Link>
+              <X size={14} />
+              Reset filter
+            </button>
           )}
         </div>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              change({ q: search });
+            }}
+            className="flex min-w-0 gap-1"
+          >
+            <input
+              aria-label="Cari data dashboard"
+              placeholder="Cari nomor, nama, atau serial…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={`${field} w-full`}
+            />
+            <button
+              aria-label="Terapkan pencarian"
+              className="rounded-lg bg-[#1A3263] px-3 text-white"
+            >
+              <Search size={16} />
+            </button>
+          </form>
+          <select
+            aria-label="Status data"
+            value={filters.status}
+            onChange={(e) => change({ status: e.target.value })}
+            className={field}
+          >
+            <option value="">Semua status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Nonaktif</option>
+            <option value="DISPOSED">Dilepas</option>
+          </select>
+          <select
+            aria-label="Lokasi data"
+            value={filters.location}
+            onChange={(e) => change({ location: e.target.value })}
+            className={field}
+          >
+            <option value="">Semua lokasi dan turunannya</option>
+            {data?.references.locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Kategori aset"
+            value={filters.category}
+            onChange={(e) => change({ category: e.target.value })}
+            className={field}
+          >
+            <option value="">Semua kategori aset</option>
+            {data?.references.categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+            <option value="none">Tanpa kategori</option>
+          </select>
+        </div>
+        {filters.condition && (
+          <button
+            onClick={() => change({ condition: "" })}
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-900"
+          >
+            Kondisi: {human(filters.condition)}
+            <X size={12} />
+          </button>
+        )}
+      </section>
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
+          {error}
+          <button
+            onClick={() => setReload((n) => n + 1)}
+            className="ml-3 font-semibold underline"
+          >
+            Coba kembali
+          </button>
+        </div>
+      )}
+      <section
+        aria-label="Ringkasan data"
+        aria-busy={busy}
+        className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6"
+      >
+        {cards.map((c) => (
+          <button
+            key={c.id}
+            aria-pressed={filters.card === c.id}
+            aria-controls="dashboard-results"
+            onClick={() => change({ card: c.id })}
+            className={`dashboard-card min-w-0 rounded-xl border p-4 text-left sm:p-5 ${filters.card === c.id ? "border-[#e9ac52] bg-[#fff0db] shadow-sm" : "border-[#E8E2DB] bg-white hover:border-[#547792]"}`}
+          >
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <span className="text-xs font-semibold leading-relaxed text-[#547792]">
+                {c.label}
+              </span>
+              <c.icon size={17} className="shrink-0 text-[#1A3263]" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-bold tabular-nums text-[#1A3263]">
+                {!data ? "—" : data.kpis[c.id]}
+              </span>
+              <ArrowUpRight
+                size={15}
+                className={
+                  filters.card === c.id ? "text-[#9e6518]" : "text-slate-400"
+                }
+              />
+            </div>
+          </button>
+        ))}
+      </section>
+      {!data && busy ? (
+        <div
+          role="status"
+          className="dashboard-skeleton h-64 rounded-xl border bg-white p-6 text-sm text-[#547792]"
+        >
+          Memuat dashboard…
+        </div>
+      ) : (
+        data && (
+          <>
+            <section
+              className="grid gap-5 xl:grid-cols-3"
+              aria-label="Distribusi data"
+            >
+              <div className="dashboard-panel">
+                <h2 className="dashboard-heading">
+                  <Tags size={16} />
+                  Aset per kategori
+                </h2>
+                <div className="mt-5 space-y-3">
+                  {!data.charts.categories.length ? (
+                    <p className="dashboard-empty">
+                      Tidak ada aset sesuai filter.
+                    </p>
+                  ) : (
+                    data.charts.categories.map((c) => (
+                      <button
+                        key={c.id}
+                        aria-pressed={filters.category === c.id}
+                        onClick={() =>
+                          change({
+                            category: filters.category === c.id ? "" : c.id,
+                            card: "assets",
+                          })
+                        }
+                        className={`block w-full rounded-lg p-2 text-left transition-colors ${filters.category === c.id ? "bg-[#fff0db]" : "hover:bg-slate-50"}`}
+                      >
+                        <span className="mb-2 flex justify-between gap-3 text-xs">
+                          <span>{c.name}</span>
+                          <strong>{c.count}</strong>
+                        </span>
+                        <span className="block h-2 overflow-hidden rounded-full bg-slate-100">
+                          <span
+                            className="dashboard-bar block h-full rounded-full bg-[#547792]"
+                            style={{
+                              width: `${data.kpis.assets ? (c.count / data.kpis.assets) * 100 : 0}%`,
+                            }}
+                          />
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-panel">
+                <h2 className="dashboard-heading">
+                  <Wrench size={16} />
+                  Kondisi equipment
+                </h2>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
+                  <div
+                    role="img"
+                    aria-label={`${data.kpis.equipment} equipment, ${data.kpis.condition} kondisi bermasalah`}
+                    className="relative grid h-32 w-32 shrink-0 place-items-center rounded-full"
+                    style={{
+                      background: totalConditions
+                        ? `conic-gradient(${segments.join(",")})`
+                        : "#e8e2db",
+                    }}
+                  >
+                    <div className="grid h-24 w-24 content-center rounded-full bg-white text-center">
+                      <strong className="text-2xl tabular-nums">
+                        {data.kpis.equipment}
+                      </strong>
+                      <span className="text-[10px] text-slate-500">
+                        Equipment
+                      </span>
+                    </div>
+                  </div>
+                  <div className="min-w-[140px] flex-1 space-y-1">
+                    {data.charts.conditions.map((c, i) => (
+                      <button
+                        key={c.id}
+                        aria-pressed={filters.condition === c.id}
+                        onClick={() =>
+                          change({
+                            condition: filters.condition === c.id ? "" : c.id,
+                            card: "equipment",
+                          })
+                        }
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg p-2 text-xs ${filters.condition === c.id ? "bg-[#fff0db]" : "hover:bg-slate-50"}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: colors[i] }}
+                          />
+                          {human(c.id)}
+                        </span>
+                        <strong>{c.count}</strong>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4 border-t pt-3">
+                  <p className="flex justify-between text-xs">
+                    <span>Equipment terhubung ke aset</span>
+                    <strong>{data.coverage}%</strong>
+                  </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="dashboard-bar h-full bg-[#1A3263]"
+                      style={{ width: `${data.coverage}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="dashboard-panel">
+                <h2 className="dashboard-heading">
+                  <MapPin size={16} />
+                  Sebaran lokasi
+                </h2>
+                <div className="mt-4 max-h-64 space-y-1 overflow-y-auto">
+                  {!data.charts.locations.length ? (
+                    <p className="dashboard-empty">
+                      Tidak ada lokasi sesuai filter.
+                    </p>
+                  ) : (
+                    data.charts.locations.map((l) => (
+                      <button
+                        key={l.id}
+                        aria-pressed={filters.location === l.id}
+                        onClick={() =>
+                          change({
+                            location: filters.location === l.id ? "" : l.id,
+                          })
+                        }
+                        className={`flex w-full items-center justify-between gap-3 rounded-lg p-3 text-left text-xs ${filters.location === l.id ? "bg-[#fff0db]" : "hover:bg-slate-50"}`}
+                      >
+                        <span className="font-medium">{l.name}</span>
+                        <span className="flex shrink-0 gap-2">
+                          <span className="rounded bg-[#e8eef7] px-2 py-1">
+                            {l.assets} aset
+                          </span>
+                          <span className="rounded bg-slate-100 px-2 py-1">
+                            {l.equipment} eqp
+                          </span>
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
+            <section
+              id="dashboard-results"
+              aria-busy={busy}
+              className="overflow-hidden rounded-xl border border-[#E8E2DB] bg-white"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
+                <h2 className="flex items-center gap-2 font-semibold">
+                  <selected.icon size={17} />
+                  {selected.label}
+                  <span
+                    aria-live="polite"
+                    className="rounded-full bg-[#e8eef7] px-2.5 py-1 text-xs tabular-nums"
+                  >
+                    {data.pagination.total}
+                  </span>
+                </h2>
+                <span className="text-xs text-slate-500">
+                  {busy
+                    ? "Memperbarui…"
+                    : filtered
+                      ? "Hasil sesuai filter"
+                      : "Seluruh data"}
+                </span>
+              </div>
+              <div
+                className={`overflow-x-auto transition-opacity ${busy ? "opacity-50" : "opacity-100"}`}
+              >
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-[#f6f4f0] text-xs text-[#547792]">
+                    <tr>
+                      {[
+                        "Nomor / kode",
+                        "Nama / keterangan",
+                        filters.card === "pending"
+                          ? "Pengaju"
+                          : "Kategori aset",
+                        "Lokasi",
+                        "Status",
+                        "Detail",
+                      ].map((h) => (
+                        <th key={h} className="px-5 py-3 font-semibold">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody
+                    key={`${query}-${reload}`}
+                    className="divide-y dashboard-table-enter"
+                  >
+                    {!data.rows.length ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="p-10 text-center text-sm text-slate-500"
+                        >
+                          Tidak ada data untuk pilihan ini.
+                          {filtered && (
+                            <button
+                              onClick={() =>
+                                change({
+                                  status: "",
+                                  location: "",
+                                  category: "",
+                                  condition: "",
+                                  q: "",
+                                })
+                              }
+                              className="ml-2 underline"
+                            >
+                              Reset filter
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ) : (
+                      data.rows.map((r) => (
+                        <tr key={r.id} className="hover:bg-slate-50">
+                          <td className="whitespace-nowrap px-5 py-4 font-semibold text-[#1A3263]">
+                            {r.code}
+                          </td>
+                          <td className="max-w-sm px-5 py-4">
+                            <Link
+                              href={r.href}
+                              className="font-medium hover:underline"
+                            >
+                              {r.name}
+                            </Link>
+                            {r.condition && (
+                              <p className="mt-1 text-xs text-slate-500">
+                                {human(r.condition)}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-xs text-slate-500">
+                            {r.category}
+                          </td>
+                          <td className="px-5 py-4 text-xs text-slate-500">
+                            {r.location}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs">
+                              {human(r.status)}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <Link
+                              href={r.href}
+                              aria-label={`Lihat ${r.code}`}
+                              className="inline-flex rounded-lg border p-2 text-[#1A3263]"
+                            >
+                              <ArrowUpRight size={16} />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <footer className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-3 text-xs text-slate-500">
+                <span>
+                  Halaman {data.pagination.page} dari{" "}
+                  {data.pagination.total_pages} · {data.pagination.total} data
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy || data.pagination.page <= 1}
+                    aria-label="Halaman sebelumnya"
+                    onClick={() =>
+                      change({ page: String(data.pagination.page - 1) })
+                    }
+                    className="rounded-lg border p-2"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    disabled={
+                      busy ||
+                      data.pagination.page >= data.pagination.total_pages
+                    }
+                    aria-label="Halaman berikutnya"
+                    onClick={() =>
+                      change({ page: String(data.pagination.page + 1) })
+                    }
+                    className="rounded-lg border p-2"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </footer>
+            </section>
+            <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+              <div className="dashboard-panel">
+                <h2 className="dashboard-heading">
+                  <Activity size={16} />
+                  Aktivitas terbaru
+                </h2>
+                <div className="mt-3 divide-y">
+                  {data.activities.length ? (
+                    data.activities.map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex flex-wrap justify-between gap-2 py-3 text-xs"
+                      >
+                        <div>
+                          <strong>{a.name}</strong>
+                          <p className="mt-1 text-slate-500">
+                            {(
+                              {
+                                CREATE: "Menambahkan data",
+                                UPDATE: "Memperbarui data",
+                                UPDATE_OWN_PROFILE: "Memperbarui profil",
+                                CONFIRM_EMAIL_CHANGE: "Memverifikasi email",
+                                SOFT_DELETE: "Menonaktifkan data",
+                                SUBMIT_REQUEST: "Mengajukan perubahan mapping",
+                                SUBMIT_AND_APPLY: "Menerapkan mapping",
+                                APPROVE_REQUEST: "Menyetujui pengajuan",
+                                REJECT_REQUEST: "Menolak pengajuan",
+                                UPDATE_USER: "Memperbarui pengguna",
+                                RUN_SCAN: "Memeriksa rekonsiliasi",
+                              } as Record<string, string>
+                            )[a.action] || "Perubahan data"}{" "}
+                            · {a.code || "Profil"}
+                          </p>
+                        </div>
+                        <time
+                          className="text-slate-400"
+                          dateTime={a.occurred_at}
+                        >
+                          {new Date(a.occurred_at).toLocaleString("id-ID", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </time>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="dashboard-empty">Belum ada aktivitas.</p>
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-panel">
+                <h2 className="dashboard-heading">
+                  <ArrowUpRight size={16} />
+                  Aksi cepat
+                </h2>
+                <div className="mt-4 space-y-2">
+                  {[
+                    {
+                      href: "/mapping",
+                      label: "Mapping & Hierarki",
+                      icon: GitBranch,
+                    },
+                    {
+                      href:
+                        user?.role === "MAINTENANCE"
+                          ? "/equipment/import"
+                          : "/assets/import",
+                      label: "Import Excel",
+                      icon: FileSpreadsheet,
+                    },
+                    ...(can("reconciliation:read")
+                      ? [
+                          {
+                            href: "/admin/reconciliation",
+                            label: `Rekonsiliasi · ${data.open_findings} temuan`,
+                            icon: ShieldAlert,
+                          },
+                        ]
+                      : []),
+                  ].map((a) => (
+                    <Link
+                      key={a.href}
+                      href={a.href}
+                      className="flex items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:bg-[#fff0db]"
+                    >
+                      <span className="flex items-center gap-2">
+                        <a.icon size={16} />
+                        {a.label}
+                      </span>
+                      <ArrowUpRight size={14} />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
+        )
+      )}
     </div>
   );
 }
