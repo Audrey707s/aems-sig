@@ -109,8 +109,18 @@ describe("Departmental review and organization", () => {
   it("does not mutate relationships when no valid manager exists", () => {
     staff.manager_id = other.id;
     const before = structuredClone(getAemsState().equipment_active_parent);
-    expect(move).toThrow(/Atasan manajer/);
+    expect(move).toThrow(/Atasan yang terhubung/);
     expect(getAemsState().equipment_active_parent).toEqual(before);
+  });
+  it("identifies an unassigned Staff instead of claiming their department has no manager", () => {
+    staff.manager_id = null;
+    expect(manager.is_active).toBe(true);
+    expect(move).toThrow(`Atasan untuk ${staff.full_name} belum dipilih`);
+    expect(getAemsState().mapping_change_requests.some(r => r.approver_id === manager.id)).toBe(false);
+  });
+  it("rejects an inactive assigned manager", () => {
+    manager.is_active = false;
+    expect(move).toThrow(/Atasan yang terhubung ke akun Anda tidak aktif/);
   });
   it("allows manager direct changes but never self-review", () => {
     staff.account_level = "MANAGER";
