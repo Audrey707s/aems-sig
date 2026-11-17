@@ -137,3 +137,8 @@ Halaman kategori/lokasi terpisah satu sama lain dan kembali ke awal ketika filte
 ## Denah Lokasi Aset
 
 `/master-data/locations` menyediakan Denah interaktif dan Tabel lokasi. Denah mengikuti induk–anak pada master lokasi, dengan fokus cabang, pencarian lintas lokasi, zoom, geser kanvas, buka/tutup cabang, breadcrumb detail, dan tautan daftar aset terfilter lokasi. Admin dapat membuka formulir Ubah dari simpul; hak CRUD tetap divalidasi oleh API master data. Lokasi nonaktif tetap ditampilkan dengan statusnya. Denah bersifat skematis, bukan koordinat geografis atau denah berskala.
+
+
+## Pendaftaran melalui persetujuan Admin
+
+Pendaftaran AEMS tidak memerlukan tautan konfirmasi email. Pada Supabase AEMS, Authentication → Sign In / Providers → Confirm email dinonaktifkan atas pilihan pemilik aplikasi. Secure email change tetap aktif. Pengguna membuat akun dengan password, diarahkan ke Menunggu Persetujuan Admin, dan tidak memperoleh akses data bisnis selama `profiles.role` masih null. Admin memeriksa identitas/alamat email lalu menetapkan bagian, jabatan, atasan dan status aktif. Penetapan role aktif merupakan persetujuan akses. Lupa password dan perubahan email tetap menggunakan verifikasi email; perubahan ini tidak menonaktifkan kedua alur tersebut. Pendaftaran yang tidak menghasilkan sesi tidak boleh dilaporkan sebagai sukses atau menyuruh pengguna menunggu email konfirmasi.

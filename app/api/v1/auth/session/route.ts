@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: String(body.email).trim(), password: String(body.password),
       });
-      if (error?.code === "email_not_confirmed") throw new AemsError("FORBIDDEN", "Email belum dikonfirmasi. Buka tautan konfirmasi di email pendaftaran; jika belum diterima, hubungi Administrator.", 403);
+      if (error?.code === "email_not_confirmed") throw new AemsError("FORBIDDEN", "Akun belum dapat digunakan. Hubungi Admin untuk memeriksa status persetujuan akun.", 403);
       if (error || !data.user) throw new AemsError("UNAUTHORIZED", "Email atau kata sandi tidak valid.", 401);
       const profile = await getSignedInProfile();
       if (!profile?.is_active) throw new AemsError("FORBIDDEN", "Akun tidak aktif. Hubungi admin.", 403);
