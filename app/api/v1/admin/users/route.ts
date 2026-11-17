@@ -1,3 +1,4 @@
+import {deliverAccountNotification, listAccountNotifications, isAccountEmailConfigured} from "@/lib/email/account-notification";
 import { z } from "zod";
 import { withAemsPersistence } from "@/lib/db/persistence";
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +18,9 @@ async function handleGET() {
       );
     }
     const state = getAemsState();
-    return NextResponse.json({ data: state.profiles });
+    const users = state.profiles.filter(p => process.env.AEMS_STORAGE_MODE !== "supabase" || p.email_verified_at);
+    const notifications = await listAccountNotifications();
+    return NextResponse.json({ data: users, notifications, email_configured: isAccountEmailConfigured() });
   } catch (err) {
     const formatted = formatErrorResponse(err);
     return NextResponse.json(formatted.body, { status: formatted.status });
@@ -67,4 +70,11 @@ async function handlePOST(req: NextRequest) {
 
 export const GET = withAemsPersistence(handleGET);
 
-export const POST = withAemsPersistence(handlePOST);
+const saveUser = withAemsPersistence(handlePOST);
+export async function POST(req: NextRequest) {
+  const response = await saveUser(req);
+  if (!response.ok) return response;
+  const body = await response.json();
+  const notification_status = body.data.is_active && body.data.role ? await deliverAccountNotification(body.data.id) : null;
+  return NextResponse.json({...body, notification_status}, {headers:{"Cache-Control":"private, no-store"}});
+}

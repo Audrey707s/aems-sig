@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
       data: {full_name}, emailRedirectTo: new URL("/auth/callback", request.url).toString(),
     }});
     if (error) throw new AemsError("VALIDATION", error.status === 429 ? "Terlalu banyak percobaan. Coba kembali beberapa saat lagi." : error.code === "user_already_exists" || error.code === "email_exists" ? "Email sudah terdaftar. Silakan masuk atau gunakan Lupa kata sandi." : "Pendaftaran belum dapat diproses. Periksa email atau coba kembali.", error.status === 429 ? 429 : 400);
-    if (!data.session) throw new AemsError("INTERNAL_ERROR", "Pendaftaran belum dapat diselesaikan. Hubungi Administrator untuk memeriksa pengaturan akun.", 503);
-    return NextResponse.json({message: "Pendaftaran berhasil. Akun Anda menunggu persetujuan Admin.", redirect: "/pending-approval"}, {status: 201, headers: {"Cache-Control": "no-store"}});
+    if (data.session) { await client.auth.signOut({scope: "local"}); throw new AemsError("INTERNAL_ERROR", "Verifikasi email belum dikonfigurasi. Hubungi Administrator.", 503); }
+    return NextResponse.json({message: "Periksa email Anda dan konfirmasikan pendaftaran. Setelah terverifikasi, akun akan tampil kepada Super Admin untuk penetapan role. Jika tautan kedaluwarsa, kirim ulang konfirmasi atau daftar kembali dengan email yang sama.", requires_confirmation: true}, {status: 201, headers: {"Cache-Control": "no-store"}});
   } catch (error) {
     const formatted = formatErrorResponse(error);
     return NextResponse.json(formatted.body, {status: formatted.status});

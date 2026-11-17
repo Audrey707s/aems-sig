@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/pending-approval",
   "/auth/callback",
   "/auth/confirm",
+  "/auth/verify",
   "/auth/email-change",
   "/forgot-password",
   "/reset-password",

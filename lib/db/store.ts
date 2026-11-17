@@ -3697,6 +3697,7 @@ export function manageUserProfile(
         403,
       );
     }
+    if (process.env.AEMS_STORAGE_MODE === "supabase" && !existing.email_verified_at) throw new AemsError("VALIDATION", "Email pengguna harus diverifikasi sebelum penetapan akun.");
     const level = input.account_level ?? existing.account_level ?? "STAFF";
     const managerId =
       input.manager_id === undefined
@@ -3712,6 +3713,7 @@ export function manageUserProfile(
       if (
         managerId === existing.id ||
         !manager?.is_active ||
+        (process.env.AEMS_STORAGE_MODE === "supabase" && !manager.email_verified_at) ||
         manager.account_level !== "MANAGER" ||
         manager.role !== input.role
       )
@@ -3728,6 +3730,7 @@ export function manageUserProfile(
         "VALIDATION",
         "Pindahkan penempatan staff terlebih dahulu sebelum mengubah manajer ini.",
       );
+    if (input.role && input.role !== "ADMIN" && level === "STAFF" && input.is_active && !managerId) throw new AemsError("VALIDATION", "Pilih Manajer aktif pada bagian yang sama sebelum menyimpan Staff.");
     const hierarchyBefore = {
       account_level: existing.account_level ?? "STAFF",
       manager_id: existing.manager_id ?? null,

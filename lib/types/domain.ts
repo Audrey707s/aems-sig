@@ -99,6 +99,7 @@ export type ReconciliationFindingType =
   | "MISSING_FROM_SAP_EXPORT";
 
 export interface Profile {
+  email_verified_at?: string | null;
   account_level?: "MANAGER" | "STAFF";
   manager_id?: string | null;
   id: string;

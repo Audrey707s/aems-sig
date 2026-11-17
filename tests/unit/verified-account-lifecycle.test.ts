@@ -1,0 +1,12 @@
+import {beforeEach,describe,it,expect,vi} from "vitest";
+import {getAemsState,resetAemsState,manageUserProfile,submitMappingRequest} from "@/lib/db/store";
+import {hasPermission,canReviewRequest} from "@/lib/permissions/rbac";
+import {aemsRequestState} from "@/lib/db/context";
+import {SEED_IDS} from "@/lib/db/seed-data";
+beforeEach(()=>{vi.unstubAllEnvs();resetAemsState();});
+describe("Verified assignment lifecycle",()=>{
+ function setup(){const state=getAemsState();const admin=state.profiles.find(p=>p.role==="ADMIN")!;const staff=state.profiles.find(p=>p.role==="MAINTENANCE")!;staff.role=null;staff.email_verified_at=new Date().toISOString();const manager={...staff,id:crypto.randomUUID(),email:"manager@example.test",role:null};state.profiles.push(manager);return {state,admin,staff,manager};}
+ it("rejects unverified assignment without mutating role",()=>{const {state,admin,staff}=setup();vi.stubEnv("AEMS_STORAGE_MODE","supabase");staff.email_verified_at=null;expect(()=>aemsRequestState.run({state},()=>manageUserProfile(admin,{...staff,role:"MAINTENANCE",account_level:"MANAGER"}))).toThrow("Email pengguna harus diverifikasi");expect(staff.role).toBeNull();});
+ it("requires an active same-department manager in the same Staff save",()=>{const {admin,staff,manager}=setup();expect(()=>manageUserProfile(admin,{...staff,role:"MAINTENANCE",account_level:"STAFF",manager_id:null})).toThrow("Pilih Manajer aktif");expect(staff.role).toBeNull();manageUserProfile(admin,{...manager,role:"MAINTENANCE",account_level:"MANAGER",manager_id:null});manager.is_active=false;expect(()=>manageUserProfile(admin,{...staff,role:"MAINTENANCE",account_level:"STAFF",manager_id:manager.id})).toThrow("Atasan harus Manajer aktif");expect(staff.role).toBeNull();});
+ it("newly assigned Manager and Staff immediately perform their review workflow",()=>{const {admin,staff,manager}=setup();manageUserProfile(admin,{...manager,role:"MAINTENANCE",account_level:"MANAGER",manager_id:null});expect(hasPermission(manager,"mapping:approve")).toBe(true);manageUserProfile(admin,{...staff,role:"MAINTENANCE",account_level:"STAFF",manager_id:manager.id});expect(hasPermission(staff,"mapping:request")).toBe(true);const request=submitMappingRequest(staff,{items:[{equipment_id:SEED_IDS.EQ_001,action_type:"MOVE",to_parent_kind:"ASSET",to_parent_id:SEED_IDS.ASSET_SAP_004}],reason:"Validasi aktivasi akun baru"});expect(request.status).toBe("SUBMITTED");expect(request.approver_id).toBe(manager.id);expect(canReviewRequest(manager,request)).toBe(true);});
+});

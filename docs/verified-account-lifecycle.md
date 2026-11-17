@@ -1,0 +1,15 @@
+# Siklus akun AEMS
+
+1. Pengguna mendaftar dengan email dan kata sandi. Supabase **Confirm email wajib aktif**. Belum ada profil bisnis sampai email dikonfirmasi; profil lama yang belum terverifikasi tetap disembunyikan dari daftar Admin.
+2. Email konfirmasi menggunakan tautan `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`. GET hanya membuka halaman konfirmasi; POST dari tombol pengguna memverifikasi token agar pemindai email tidak menghabiskan tautan. Tidak bergantung pada PKCE perangkat asal.
+3. Tautan kedaluwarsa: pengguna dapat mengirim ulang konfirmasi atau mendaftar kembali memakai email yang sama. Provider menerapkan batas frekuensi; gunakan tautan terbaru. Tidak menghapus akun atau mengganti kata sandi saat pengiriman ulang.
+4. Setelah terverifikasi, profil muncul di Pengguna dengan role belum ditetapkan. Belum dapat mengakses data bisnis.
+5. Super Admin memilih Manajer/Staff dan bagian. Staff wajib memiliki Manajer aktif di bagian yang sama. Simpan role dan atasan dalam satu transaksi. Penetapan baru langsung berlaku tanpa mengubah JWT/metadata atau persetujuan kedua.
+6. Transaksi menyimpan outbox pemberitahuan. Setelah commit, server mengirim email informasi role dengan tautan login biasa, tanpa token kedaluwarsa atau kata sandi. SMTP gagal tidak membatalkan role; Admin melihat status dan dapat mengirim ulang. Outbox memakai klaim atomik/lease agar klik bersamaan tidak mengirim ganda. Pengiriman bersifat at-least-once jika server mati setelah SMTP menerima dan sebelum status tersimpan; message ID stabil.
+7. Lupa kata sandi tetap memakai bukti email satu kali dan grant terbatas waktu; sesi login biasa tidak dapat dipakai untuk melewati bukti pemulihan.
+
+## Konfigurasi server email pemberitahuan
+
+Vercel AEMS membutuhkan `GMAIL_USER` dan `GMAIL_APP_PASSWORD` (sandi aplikasi Gmail, 16 karakter), hanya server. SMTP untuk Auth di Supabase terpisah dari environment aplikasi. Sandi sensitif yang sudah tersimpan tidak dapat dibaca kembali melalui API; jangan menyalin sandi ke git/log/chat. Domain login di email pemberitahuan dikunci ke production AEMS.
+
+Tidak ada email massal saat migrasi. Profil/role/histori yang sudah ada dipertahankan; penanda verifikasi diisi dari Auth. Perlu menetapkan atasan Staff lama yang belum memiliki atasan sebelum menyimpan/mengaktifkan kembali.

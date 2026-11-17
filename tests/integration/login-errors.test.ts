@@ -7,6 +7,6 @@ import {POST} from "@/app/api/v1/auth/session/route";
 beforeEach(()=>{vi.stubEnv("AEMS_STORAGE_MODE","supabase");mocks.signInWithPassword.mockReset();});
 describe("Login error messages",()=>{
  async function login(code:string){mocks.signInWithPassword.mockResolvedValue({data:{user:null},error:{code}});return POST(new NextRequest("https://aems.test/api/v1/auth/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"test@example.test",password:"test-only-password"})}));}
- it("directs legacy unconfirmed accounts to admin review",async()=>{const r=await login("email_not_confirmed");expect(r.status).toBe(403);expect((await r.json()).error.message).toContain("Hubungi Admin");});
+ it("offers confirmation resend for unconfirmed accounts",async()=>{const r=await login("email_not_confirmed");expect(r.status).toBe(403);expect((await r.json()).error.details.reason).toBe("email_not_confirmed");});
  it("keeps incorrect credentials generic",async()=>{const r=await login("invalid_credentials");expect(r.status).toBe(401);expect((await r.json()).error.message).toBe("Email atau kata sandi tidak valid.");});
 });
