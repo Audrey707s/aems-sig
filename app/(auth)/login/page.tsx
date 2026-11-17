@@ -3,18 +3,20 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ResendConfirmation } from "@/components/auth/ResendConfirmation";
 import { AuthCard, authButtonClass, authLinkClass } from "@/components/auth/AuthCard";
 
 const loginInputClass = "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-normal text-gray-900 outline-none transition focus:border-[#1A3263] focus:ring-2 focus:ring-[#1A3263]/10 disabled:opacity-60";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [confirmation, setConfirmation] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan lama tidak dapat digunakan. Pendaftaran sekarang melalui persetujuan Admin. Silakan masuk jika akun sudah disetujui, atau hubungi Admin untuk memeriksa status akun.");
+    if (new URLSearchParams(window.location.search).get("confirmation") === "failed") { setConfirmation(true); setError("Tautan konfirmasi sudah digunakan atau kedaluwarsa. Masukkan email dan kirim ulang konfirmasi. Jika sudah terverifikasi, langsung masuk."); }
   }, []);
 
   const handleLogin = async (event: FormEvent) => {
@@ -23,7 +25,7 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/v1/auth/session", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email, password})});
       const body = await response.json();
-      if (!response.ok) {setError(body.error?.message || "Login gagal. Silakan coba kembali."); return;}
+      if (!response.ok) {setConfirmation(body.error?.details?.reason === "email_not_confirmed"); setError(body.error?.message || "Login gagal. Silakan coba kembali."); return;}
       setPassword(""); router.push(body.redirect || "/dashboard"); router.refresh();
     } catch {setError("Tidak dapat terhubung. Periksa koneksi dan coba kembali.");}
     finally {setLoading(false);}
@@ -36,6 +38,7 @@ export default function LoginPage() {
       <label className="block text-xs font-semibold">Kata sandi<input autoComplete="current-password" type="password" required value={password} onChange={e=>setPassword(e.target.value)} className={loginInputClass} /></label>
       <button type="submit" disabled={loading} className={authButtonClass.replace("rounded-md", "rounded-xl") + " py-3 shadow"}>{loading ? "Memproses..." : "Masuk"}</button>
     </form>
+    {confirmation && <ResendConfirmation email={email} />}
     <div className="mt-5 flex flex-wrap justify-center gap-4 text-sm"><Link href="/register" className={authLinkClass}>Daftar akun</Link><Link href="/forgot-password" className={authLinkClass}>Lupa kata sandi?</Link></div>
   </AuthCard>;
 }

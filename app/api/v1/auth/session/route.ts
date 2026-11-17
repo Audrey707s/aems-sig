@@ -14,7 +14,7 @@ async function handleGET() {
     return NextResponse.json({
       data: { user: profile },
       profile,
-      available_profiles: state.profiles,
+      available_profiles: state.profiles.filter(p => process.env.AEMS_STORAGE_MODE !== "supabase" || p.email_verified_at),
       app_settings: state.app_settings,
     });
   } catch (err) {
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: String(body.email).trim(), password: String(body.password),
       });
-      if (error?.code === "email_not_confirmed") throw new AemsError("FORBIDDEN", "Akun belum dapat digunakan. Hubungi Admin untuk memeriksa status persetujuan akun.", 403);
+      if (error?.code === "email_not_confirmed") throw new AemsError("FORBIDDEN", "Email belum diverifikasi. Konfirmasikan email Anda atau kirim ulang tautan konfirmasi.", 403, {reason: "email_not_confirmed"});
       if (error || !data.user) throw new AemsError("UNAUTHORIZED", "Email atau kata sandi tidak valid.", 401);
       const profile = await getSignedInProfile();
       if (!profile?.is_active) throw new AemsError("FORBIDDEN", "Akun tidak aktif. Hubungi admin.", 403);

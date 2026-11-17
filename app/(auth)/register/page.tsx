@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ResendConfirmation } from "@/components/auth/ResendConfirmation";
 import { AuthCard, authButtonClass, authInputClass, authLinkClass } from "@/components/auth/AuthCard";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -30,6 +31,7 @@ export default function RegisterPage() {
         <label className="block text-sm font-medium">Ulangi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
         <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar"}</button>
       </form>
+      <ResendConfirmation email={form.email} />
       <p className="mt-5 text-center text-sm text-slate-600">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
   </AuthCard>;
 }

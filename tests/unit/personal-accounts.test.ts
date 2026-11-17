@@ -56,7 +56,7 @@ describe("Personal AEMS accounts", () => {
     state.profiles.push(user);
     expect(hasPermission(user, "asset:read")).toBe(false);
     const admin = state.profiles.find(p => p.role === "ADMIN")!;
-    manageUserProfile(admin, {...user, role: "ACCOUNTING"});
+    manageUserProfile(admin, {...user, role: "ACCOUNTING", account_level: "MANAGER"});
     expect(hasPermission(state.profiles.find(p => p.id === user.id), "asset:write")).toBe(true);
     expect(hasPermission(state.profiles.find(p => p.id === user.id), "equipment:write")).toBe(false);
   });
