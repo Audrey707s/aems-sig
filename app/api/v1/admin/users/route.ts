@@ -36,7 +36,7 @@ async function handlePOST(req: NextRequest) {
         role: z.enum(["ACCOUNTING", "MAINTENANCE", "ADMIN"]).nullable(),
         account_level: z.enum(["MANAGER", "STAFF"]).optional(),
         manager_id: z.string().uuid().nullable().optional(),
-        expected_updated_at: z.string().datetime().optional(),
+        expected_updated_at: z.string().datetime({ offset: true }).optional(),
         is_active: z.boolean(),
       })
       .safeParse(await req.json());
