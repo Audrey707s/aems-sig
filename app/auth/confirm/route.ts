@@ -1,3 +1,4 @@
+import {isSignupConfirmation} from "@/lib/auth/confirmation";
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 const failed = (request: NextRequest) => NextResponse.redirect(new URL("/login?confirmation=failed",request.url),303);
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const token_hash = String(form.get("token_hash") ?? "");
     const type = String(form.get("type") ?? "");
-    if (!/^[a-f0-9]{32,128}$/i.test(token_hash) || (type !== "signup" && type !== "email")) return failed(request);
+    if (!isSignupConfirmation(token_hash, type) || (type !== "signup" && type !== "email")) return failed(request);
     const client = await createSupabaseServerClient();
     if (!client) return failed(request);
     const {error} = await client.auth.verifyOtp({token_hash,type});
