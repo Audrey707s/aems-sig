@@ -1945,6 +1945,10 @@ export function submitMappingRequest(
     actor.account_level === "MANAGER";
   const canAutoApplyFirstLink = isFirstLinkOnly;
   if (!shouldApplyDirect) {
+    if (!actor.manager_id) throw new AemsError(
+      "VALIDATION",
+      `Atasan untuk ${actor.full_name} belum dipilih. Admin perlu memilih Manajer pada kolom Atasan di Master Data → Pengguna.`,
+    );
     const manager = state.profiles.find(
       (p) =>
         p.id === actor.manager_id &&
@@ -1955,7 +1959,7 @@ export function submitMappingRequest(
     if (!manager)
       throw new AemsError(
         "VALIDATION",
-        "Atasan manajer belum ditetapkan atau tidak aktif. Hubungi Admin untuk mengatur Organisasi.",
+        "Atasan yang terhubung ke akun Anda tidak aktif atau bukan Manajer pada bagian yang sama. Minta Admin memperbarui kolom Atasan di Master Data → Pengguna.",
       );
     newRequest.approver_id = manager.id;
   }
