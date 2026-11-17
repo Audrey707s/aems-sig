@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       data: {full_name}, emailRedirectTo: new URL("/auth/callback", request.url).toString(),
     }});
     if (error) throw new AemsError("VALIDATION", error.status === 429 ? "Terlalu banyak percobaan. Coba kembali beberapa saat lagi." : "Pendaftaran belum dapat diproses. Periksa email atau coba kembali.", error.status === 429 ? 429 : 400);
-    return NextResponse.json({message: data.session ? "Akun berhasil didaftarkan. Menunggu penetapan jenis akun oleh admin." : "Periksa email Anda untuk melanjutkan pendaftaran. Setelah email terverifikasi, admin akan menetapkan jenis akun.", redirect: data.session ? "/pending-approval" : null}, {status: 201, headers: {"Cache-Control": "no-store"}});
+    return NextResponse.json({message: data.session ? "Akun berhasil didaftarkan. Menunggu penetapan jenis akun oleh admin." : "Pendaftaran memerlukan konfirmasi email. Buka tautan konfirmasi, lalu masuk. Akses data mengikuti jenis akun yang ditetapkan Admin. Jika email belum diterima, gunakan Kirim ulang email konfirmasi.", redirect: data.session ? "/pending-approval" : null}, {status: 201, headers: {"Cache-Control": "no-store"}});
   } catch (error) {
     const formatted = formatErrorResponse(error);
     return NextResponse.json(formatted.body, {status: formatted.status});

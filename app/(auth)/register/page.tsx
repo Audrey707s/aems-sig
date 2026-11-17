@@ -4,20 +4,23 @@ import { AuthCard, authButtonClass, authInputClass, authLinkClass } from "@/comp
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { ResendConfirmation } from "@/components/auth/ResendConfirmation";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({full_name: "", email: "", password: "", confirmation: ""});
+  const [confirmationEmail, setConfirmationEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ok: boolean; message: string} | null>(null);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); if (busy) return;
     if (form.password !== form.confirmation) {setFeedback({ok: false, message: "Konfirmasi kata sandi tidak sama."}); return;}
-    setBusy(true); setFeedback(null);
+    setBusy(true); setFeedback(null); setConfirmationEmail("");
     try {
       const response = await fetch("/api/v1/auth/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(form)});
       const body = await response.json();
       setFeedback({ok: response.ok, message: response.ok ? body.message : body.error?.message || "Pendaftaran gagal."});
-      if (response.ok) {setForm({...form, password: "", confirmation: ""}); if (body.redirect) {router.push(body.redirect); router.refresh();}}
+      if (response.ok) {if (!body.redirect) setConfirmationEmail(form.email); setForm({...form, password: "", confirmation: ""}); if (body.redirect) {router.push(body.redirect); router.refresh();}}
     } catch {setFeedback({ok: false, message: "Koneksi terputus. Silakan coba kembali."});}
     finally {setBusy(false);}
   };
@@ -30,6 +33,7 @@ export default function RegisterPage() {
         <label className="block text-sm font-medium">Ulangi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
         <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar"}</button>
       </form>
+      {confirmationEmail && <ResendConfirmation email={confirmationEmail} />}
       <p className="mt-5 text-center text-sm text-slate-600">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
   </AuthCard>;
 }
