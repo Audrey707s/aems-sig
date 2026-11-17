@@ -21,7 +21,6 @@ import {
   BarChart3,
   ShieldAlert,
   Settings,
-  UserRound,
   ClipboardList,
   LogOut,
   ChevronDown,
@@ -133,7 +132,6 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "PENGATURAN",
     items: [
-      { label: "Profil", href: "/profile", icon: UserRound },
       { label: "Master Data", href: "/master-data", icon: Settings },
     ],
   },
@@ -433,6 +431,7 @@ export function AppShell({
                       return searchParams.get(key) === value;
                     })
                   : (pathname === path ||
+                      (path === "/master-data" && pathname === "/profile") ||
                       (path !== "/dashboard" &&
                         pathname.startsWith(path + "/"))) &&
                     !(
@@ -495,6 +494,7 @@ export function AppShell({
                             const [path, query] = item.href.split("?");
                             const isActive =
                               pathname === path ||
+                              (path === "/master-data" && pathname === "/profile") ||
                               (path !== "/dashboard" &&
                                 pathname.startsWith(path + "/"));
                             const exactActive = query
