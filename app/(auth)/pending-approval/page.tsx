@@ -11,9 +11,9 @@ export default async function PendingApprovalPage() {
   if (profile.is_active && profile.role) redirect("/dashboard");
   return <main className="min-h-screen bg-[#F6F4F0] p-4 sm:p-8"><div className="mx-auto max-w-xl space-y-5">
     <section className="rounded-xl border border-[#E8E2DB] bg-white p-6 space-y-3">
-      <h1 className="text-xl font-bold">{profile.is_active ? "Menunggu Penetapan Jenis Akun" : "Akun Dinonaktifkan"}</h1>
+      <h1 className="text-xl font-bold">{profile.is_active ? "Menunggu Persetujuan Admin" : "Akun Dinonaktifkan"}</h1>
       <p className="font-semibold">{profile.full_name}</p>
-      <p className="text-sm text-[#547792]">{profile.is_active ? "Admin akan menetapkan akun Anda sebagai Accounting atau Equipment. Akses aplikasi tersedia setelah penetapan selesai." : "Hubungi admin untuk memeriksa status akun Anda."}</p>
+      <p className="text-sm text-[#547792]">{profile.is_active ? "Pendaftaran berhasil. Admin akan memeriksa pengguna dan menetapkan bagian, jabatan, serta atasan. Akses data tersedia setelah akun disetujui." : "Hubungi admin untuk memeriksa status akun Anda."}</p>
       <PendingAccountActions />
     </section>
     <PasswordChangeForm />

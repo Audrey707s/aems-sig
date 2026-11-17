@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan konfirmasi tidak berlaku atau sudah kedaluwarsa. Silakan coba kembali.");
+    if (new URLSearchParams(window.location.search).get("confirmation") === "failed") setError("Tautan lama tidak dapat digunakan. Pendaftaran sekarang melalui persetujuan Admin. Silakan masuk jika akun sudah disetujui, atau hubungi Admin untuk memeriksa status akun.");
   }, []);
 
   const handleLogin = async (event: FormEvent) => {
