@@ -13,3 +13,7 @@
 Vercel AEMS membutuhkan `GMAIL_USER` dan `GMAIL_APP_PASSWORD` (sandi aplikasi Gmail, 16 karakter), hanya server. SMTP untuk Auth di Supabase terpisah dari environment aplikasi. Sandi sensitif yang sudah tersimpan tidak dapat dibaca kembali melalui API; jangan menyalin sandi ke git/log/chat. Domain login di email pemberitahuan dikunci ke production AEMS.
 
 Tidak ada email massal saat migrasi. Profil/role/histori yang sudah ada dipertahankan; penanda verifikasi diisi dari Auth. Perlu menetapkan atasan Staff lama yang belum memiliki atasan sebelum menyimpan/mengaktifkan kembali.
+
+## Kompatibilitas token konfirmasi
+
+TokenHash Supabase pada alur PKCE memiliki awalan `pkce_` diikuti hash heksadesimal. Halaman konfirmasi dan endpoint POST memakai validator bersama yang menerima hash biasa maupun prefiks PKCE dan meneruskannya utuh ke `verifyOtp`. GET tetap tidak mengonsumsi token. Tes mencakup format aktual PKCE sepanjang 61 karakter, rendering tombol konfirmasi, dan POST tanpa menghapus prefiks. Token hilang/rusak tetap ditolak.

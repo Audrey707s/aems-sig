@@ -68,7 +68,7 @@ export default function Page() {
                   </ul>
                 </div>
               ))}
-            <h3 className="font-semibold">Belum ditempatkan</h3>
+            {users.some(p => p.role === role && p.account_level !== "MANAGER" && !p.manager_id) && <h3 className="font-semibold">Staff belum memiliki atasan</h3>}
             {users
               .filter(
                 (p) =>
