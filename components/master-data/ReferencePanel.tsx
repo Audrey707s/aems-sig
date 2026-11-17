@@ -8,6 +8,8 @@ import { useColumnFilters } from "@/components/table/useColumnFilters";
 import { matchesSelected, sortTableRows } from "@/lib/table-query";
 import type { ReferenceItem } from "@/lib/types/domain";
 
+import { LocationDiagram } from "./LocationDiagram";
+
 type Kind = "asset_categories" | "equipment_categories" | "locations";
 const empty = {
   code: "",
@@ -20,6 +22,7 @@ export default function ReferencePanel({
 }: {
   locations?: boolean;
 }) {
+  const [view, setView] = useState<"diagram" | "table">("diagram");
   const tableParams = useSearchParams();
   const {column, sortBy, sortDir} = useColumnFilters("name", () => {});
   const {current: sequence} = useRef({value:0});
@@ -310,7 +313,10 @@ export default function ReferencePanel({
           </div>
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-[#E8E2DB] bg-white">
+      {locations && <div className="flex gap-2" aria-label="Tampilan lokasi">{(["diagram", "table"] as const).map(value => <button key={value} className="diagram-tool" aria-pressed={view === value} onClick={() => setView(value)}>{value === "diagram" ? "Denah interaktif" : "Tabel lokasi"}</button>)}</div>}
+      {locations && view === "diagram" && !loading && <LocationDiagram rows={rows} onEdit={admin ? row => {setEditing(row); setForm({code:row.code,name:row.name,parent_id:row.parent_id,is_active:row.is_active});setOpen(true);setDeleting(null);setError(""); window.scrollTo({top:0,behavior:"smooth"});} : undefined} />}
+      {locations && view === "diagram" && loading && <p role="status">Memuat denah…</p>}
+      {(!locations || view === "table") && <div className="overflow-x-auto rounded-xl border border-[#E8E2DB] bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-[#E8E2DB]/50 text-[#1A3263]">
             <tr>
@@ -401,7 +407,7 @@ export default function ReferencePanel({
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
     </div>
   );
 }
