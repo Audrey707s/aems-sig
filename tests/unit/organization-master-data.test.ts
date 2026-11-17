@@ -255,3 +255,28 @@ describe("Reference CRUD", () => {
     ).toThrow(/Hanya Admin/);
   });
 });
+
+describe("Routing existing requests when assigning Staff", () => {
+  it("routes legacy submitted requests and preserves history and request status", () => {
+    const request = move();
+    request.approver_id = null;
+    const reviewed = {...request,id:crypto.randomUUID(),request_code:"DONE",status:"APPLIED" as const,approver_id:null};
+    getAemsState().mapping_change_requests.push(reviewed);
+    manageUserProfile(admin,{...staff,manager_id:manager.id});
+    expect(request.approver_id).toBe(manager.id);
+    expect(request.status).toBe("SUBMITTED");
+    expect(reviewed.approver_id).toBeNull();
+    expect(getAemsState().audit_logs.some(a=>a.entity_id===request.id && a.action==="REASSIGN_APPROVER")).toBe(true);
+    expect(canReviewRequest(manager,request)).toBe(true);
+    expect(canReviewRequest(other,request)).toBe(false);
+  });
+  it("moves pending review responsibility to a newly assigned manager", () => {
+    const request=move();
+    const replacement={...manager,id:crypto.randomUUID(),email:"replacement@test.invalid"};
+    getAemsState().profiles.push(replacement);
+    manageUserProfile(admin,{...staff,manager_id:replacement.id});
+    expect(request.approver_id).toBe(replacement.id);
+    expect(canReviewRequest(manager,request)).toBe(false);
+    expect(canReviewRequest(replacement,request)).toBe(true);
+  });
+});

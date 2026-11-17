@@ -3749,6 +3749,18 @@ export function manageUserProfile(
     existing.department = input.department ?? existing.department;
     existing.updated_at = now;
 
+    // Existing submitted requests follow the Staff's explicitly assigned manager,
+    // including requests created before departmental routing was introduced.
+    if (input.role && input.is_active && level === "STAFF" && managerId) {
+      for (const request of state.mapping_change_requests) {
+        if (request.requested_by !== existing.id || request.status !== "SUBMITTED" || request.approver_id === managerId) continue;
+        const previousApprover = request.approver_id ?? null;
+        request.approver_id = managerId;
+        appendAuditLog(state, actor, "MAPPING_REQUEST", request.id, request.request_code,
+          "REASSIGN_APPROVER", {approver_id: previousApprover}, {approver_id: managerId}, ["approver_id"]);
+      }
+    }
+
     appendAuditLog(
       state,
       actor,
