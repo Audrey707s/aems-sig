@@ -133,3 +133,7 @@ Halaman aplikasi dan autentikasi memiliki transisi masuk singkat lewat template 
 Panel **Aset per kategori**, **Sebaran lokasi**, **Aktivitas terbaru**, serta tabel hasil dashboard menampilkan maksimal **5 item per halaman**. Tombol panah sebelumnya/berikutnya menunjukkan sisa data melalui rentang dan total item. Kategori dan lokasi memiliki tautan ke Master Data terkait; tautan aktivitas lengkap ke Audit Trail hanya tersedia untuk pengguna dengan izin audit penuh.
 
 Halaman kategori/lokasi terpisah satu sama lain dan kembali ke awal ketika filter distribusi berubah. Aktivitas dipaginasi di server dengan `activity_page`, diurutkan terbaru dahulu, dan dibatasi pada aktivitas yang boleh dilihat pengguna. Pergantian halaman aktivitas mempertahankan filter dan halaman tabel hasil; riwayat lama tidak lagi terpotong pada lima catatan pertama.
+
+## Denah Lokasi Aset
+
+`/master-data/locations` menyediakan Denah interaktif dan Tabel lokasi. Denah mengikuti induk–anak pada master lokasi, dengan fokus cabang, pencarian lintas lokasi, zoom, geser kanvas, buka/tutup cabang, breadcrumb detail, dan tautan daftar aset terfilter lokasi. Admin dapat membuka formulir Ubah dari simpul; hak CRUD tetap divalidasi oleh API master data. Lokasi nonaktif tetap ditampilkan dengan statusnya. Denah bersifat skematis, bukan koordinat geografis atau denah berskala.
