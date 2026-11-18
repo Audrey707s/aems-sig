@@ -8,15 +8,18 @@ import { useState, type FormEvent } from "react";
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({full_name: "", email: "", password: "", confirmation: ""});
+  const [cooldownUntil,setCooldownUntil] = useState(0);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ok: boolean; message: string} | null>(null);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); if (busy) return;
+    if (Date.now() < cooldownUntil) {setFeedback({ok:false,message:"Tunggu 60 detik sejak permintaan terakhir sebelum mendaftar atau mengirim ulang konfirmasi."}); return;}
     if (form.password !== form.confirmation) {setFeedback({ok: false, message: "Konfirmasi kata sandi tidak sama."}); return;}
     setBusy(true); setFeedback(null);
     try {
       const response = await fetch("/api/v1/auth/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(form)});
       const body = await response.json();
+      if (response.ok || response.status === 429) setCooldownUntil(Date.now() + 60000);
       setFeedback({ok: response.ok, message: response.ok ? body.message : body.error?.message || "Pendaftaran gagal."});
       if (response.ok) {setForm({...form, password: "", confirmation: ""}); if (body.redirect) {router.push(body.redirect); router.refresh();}}
     } catch {setFeedback({ok: false, message: "Koneksi terputus. Silakan coba kembali."});}
@@ -31,7 +34,7 @@ export default function RegisterPage() {
         <label className="block text-sm font-medium">Ulangi kata sandi<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})} className={authInputClass} /></label>
         <button disabled={busy} className={authButtonClass}>{busy ? "Mendaftarkan..." : "Daftar"}</button>
       </form>
-      <ResendConfirmation email={form.email} />
+      <ResendConfirmation email={form.email} disabled={busy} cooldownUntil={cooldownUntil} onRequested={()=>setCooldownUntil(Date.now()+60000)} />
       <p className="mt-5 text-center text-sm text-slate-600">Sudah punya akun? <Link href="/login" className={authLinkClass}>Masuk</Link></p>
   </AuthCard>;
 }

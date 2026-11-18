@@ -1,3 +1,4 @@
+import {authEmailFailure} from "@/lib/auth/email-delivery";
 import {NextRequest,NextResponse} from "next/server";
 import {z} from "zod";
 import {createSupabaseServerClient} from "@/lib/supabase/server";
@@ -11,7 +12,7 @@ export async function POST(request:NextRequest){
   const client=await createSupabaseServerClient();
   if(!client || process.env.AEMS_STORAGE_MODE!=="supabase")throw new AemsError("INTERNAL_ERROR","Pengiriman email belum tersedia.",503);
   const {error}=await client.auth.resend({type:"signup",email:parsed.data.email,options:{emailRedirectTo:new URL("/auth/callback",request.url).toString()}});
-  if(error)throw new AemsError("VALIDATION",error.status===429?"Terlalu banyak permintaan. Tunggu beberapa saat sebelum mencoba lagi.":"Permintaan pengiriman belum dapat diproses. Coba lagi nanti atau hubungi Administrator.",error.status===429?429:503);
-  return NextResponse.json({message:"Permintaan diterima. Jika alamat ini memiliki pendaftaran yang belum dikonfirmasi, email konfirmasi akan dikirim. Periksa Inbox dan Spam; pastikan alamat email benar. Jika tetap belum masuk, hubungi Administrator."},{headers:{"Cache-Control":"no-store"}});
- }catch(error){const result=formatErrorResponse(error);return NextResponse.json(result.body,{status:result.status,headers:{"Cache-Control":"no-store"}});}
+  if(error){const failure=authEmailFailure(error);console.error("AEMS_CONFIRMATION_EMAIL_FAILED",{code:failure.code,status:failure.status});throw new AemsError("VALIDATION",failure.message,failure.status===400?503:failure.status);}
+  return NextResponse.json({retry_after:60,message:"Permintaan diterima. Jika alamat ini memiliki pendaftaran yang belum dikonfirmasi, email konfirmasi akan dikirim. Periksa Inbox dan Spam; pastikan alamat email benar. Jika tetap belum masuk, hubungi Administrator."},{headers:{"Cache-Control":"no-store"}});
+ }catch(error){const result=formatErrorResponse(error);return NextResponse.json(result.body,{status:result.status,headers:{"Cache-Control":"no-store",...(result.status===429?{"Retry-After":"60"}:{})}});}
 }
