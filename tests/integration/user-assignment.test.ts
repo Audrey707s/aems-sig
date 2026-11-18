@@ -12,6 +12,11 @@ describe("User assignment timestamps",()=>{
   const response=await POST(new NextRequest("https://aems.test/api/v1/admin/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...user,role:"ACCOUNTING",account_level:"MANAGER",manager_id:null,expected_updated_at:timestamp})}));
   expect(response.status).toBe(200);expect((await response.json()).data.role).toBe("ACCOUNTING");
  });
+ it("accepts administrator assignment and removes the old organization manager",async()=>{
+  const user=fixture();user.manager_id=getAemsState().profiles.find(p=>p.role==="ADMIN")!.id;
+  const response=await POST(new NextRequest("https://aems.test/api/v1/admin/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...user,role:"ADMIN",expected_updated_at:timestamp})}));
+  expect(response.status).toBe(200);const body=await response.json();expect(body.data.role).toBe("ADMIN");expect(body.data.manager_id).toBeNull();
+ });
  it("still rejects an outdated version",async()=>{
   const user=fixture();
   const response=await POST(new NextRequest("https://aems.test/api/v1/admin/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...user,role:"MAINTENANCE",expected_updated_at:"2026-11-17T18:35:37.880926+00:00"})}));

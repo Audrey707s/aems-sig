@@ -72,10 +72,16 @@ describe("Personal AEMS accounts", () => {
     expect(() => manageUserProfile(admin, {...admin, role: "ACCOUNTING"})).toThrow("Administrator aktif terakhir");
     expect(() => manageUserProfile(admin, {...admin, is_active: false})).toThrow("Administrator aktif terakhir");
   });
-  it("does not create another admin through account-type assignment", () => {
+  it("allows an administrator to promote another user and clears their manager", () => {
     const state = getAemsState();
     const admin = state.profiles.find(p => p.role === "ADMIN")!;
     const accounting = state.profiles.find(p => p.role === "ACCOUNTING")!;
-    expect(() => manageUserProfile(admin, {...accounting, role: "ADMIN"})).toThrow("Accounting atau Equipment");
+    accounting.manager_id = admin.id;
+    const result = manageUserProfile(admin, {...accounting, role: "ADMIN"});
+    expect(result.role).toBe("ADMIN");
+    expect(result.manager_id).toBeNull();
+    expect(hasPermission(result, "users:manage")).toBe(true);
+    expect(hasPermission(result, "settings:manage")).toBe(true);
+    expect(getAemsState().audit_logs.some(log => log.entity_id === accounting.id && log.action === "UPDATE_USER")).toBe(true);
   });
 });
