@@ -33,6 +33,10 @@ export async function updateSessionAndProtectRoutes(request: NextRequest) {
     return NextResponse.redirect(failureUrl);
   }
 
+  // These routes authenticate an email proof themselves. Do not refresh an
+  // unrelated existing session or merge its cookies into the proof response.
+  if (["/auth/confirm", "/auth/verify", "/auth/confirmation-error", "/auth/callback"].includes(pathname)) return supabaseResponse;
+
   // If Supabase Auth is configured and AEMS_STORAGE_MODE=supabase, validate JWT via getUser()
   if (isSupabaseConfigured() && process.env.AEMS_STORAGE_MODE === "supabase") {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
