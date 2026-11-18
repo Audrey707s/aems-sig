@@ -1,7 +1,7 @@
 import {isSignupConfirmation} from "@/lib/auth/confirmation";
 import Link from "next/link";
 import {AuthCard,authButtonClass,authLinkClass} from "@/components/auth/AuthCard";
-export const metadata = {referrer: "no-referrer" as const};
+export const metadata = {referrer: "strict-origin" as const};
 export default async function VerifyEmail({searchParams}:{searchParams:Promise<{token_hash?:string;type?:string}>}) {
   const params = await searchParams;
   const valid = isSignupConfirmation(params.token_hash, params.type);

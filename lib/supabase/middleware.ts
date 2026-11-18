@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/pending-approval",
   "/auth/callback",
   "/auth/confirm",
+  "/auth/confirmation-error",
   "/auth/verify",
   "/auth/email-change",
   "/forgot-password",
@@ -26,6 +27,15 @@ export async function updateSessionAndProtectRoutes(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // Old confirmation failures must never open another account's dashboard.
+  if ((pathname === "/login" || pathname === "/dashboard") && request.nextUrl.searchParams.get("confirmation") === "failed") {
+    const failureUrl = new URL("/auth/confirmation-error?reason=invalid",request.url);
+    return NextResponse.redirect(failureUrl);
+  }
+
+  // These routes authenticate an email proof themselves. Do not refresh an
+  // unrelated existing session or merge its cookies into the proof response.
+  if (["/auth/confirm", "/auth/verify", "/auth/confirmation-error", "/auth/callback"].includes(pathname)) return supabaseResponse;
 
   // If Supabase Auth is configured and AEMS_STORAGE_MODE=supabase, validate JWT via getUser()
   if (isSupabaseConfigured() && process.env.AEMS_STORAGE_MODE === "supabase") {
