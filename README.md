@@ -61,11 +61,13 @@ Repository saat ini membaca snapshot domain lengkap untuk mempertahankan aturan 
 
 ## Akun personal dan jenis akun
 
-Pengguna mendaftar melalui `/register` memakai nama, email, dan password sendiri. Pendaftaran tidak menerima pilihan role. Trigger database membuat profil dengan `role=null`; pengguna hanya dapat membuka halaman menunggu penetapan dan mengelola password sendiri sampai admin menetapkan jenis akun. Halaman Pengguna menyediakan antrean Menunggu Penetapan dan pilihan Accounting/Equipment. Label Equipment memakai identifier internal MAINTENANCE agar data dan kewenangan yang sudah ada tetap kompatibel.
+Pengguna mendaftar melalui `/register` memakai nama, email, dan password sendiri, tanpa memilih role. Email harus diverifikasi sebelum profil muncul di antrean Menunggu Penetapan. Administrator dapat menetapkan Manajer/Staff Accounting, Manajer/Staff Maintenance, atau Administrator melalui Master Data → Pengguna. Role disimpan bersama audit; pemberitahuan email dikirim setelah transaksi tersimpan. Akun aktif langsung memakai akses role terbaru dengan password pendaftaran yang sama.
 
-Ganti Password tersedia di Profil dan halaman menunggu penetapan. Server memverifikasi password lama melalui Supabase Auth, memeriksa perbedaan dan konfirmasi password baru, lalu memperbarui identitas pengguna yang sedang login. Password tidak disimpan di tabel aplikasi, log, atau audit. Sesi lain ditutup setelah perubahan. Admin aktif terakhir dilindungi di server dan trigger database.
+Promosi menjadi Administrator menghapus hubungan atasan akun tersebut. Jika masih membawahi Staff aktif, pindahkan penempatan Staff lebih dulu agar persetujuan tidak kehilangan Manajer. Hanya Administrator aktif yang boleh mengubah role; akun belum terverifikasi tetap ditolak dan Administrator aktif terakhir tetap dilindungi di server serta database. Pendaftaran dan perubahan profil sendiri tidak dapat digunakan untuk menaikkan role.
 
-Jalankan juga migrasi `20261112021715_personal_account_registration.sql`. Jika konfirmasi email diaktifkan pada Supabase, konfigurasi Site URL dan allowlist redirect untuk domain deployment dan `/auth/callback`; aplikasi mendukung callback PKCE serta konfirmasi token hash. Gunakan pengaturan pengiriman email yang tersedia pada proyek, tanpa menonaktifkan verifikasi secara otomatis.
+Ganti Password tersedia melalui Profil; halaman menunggu penetapan hanya menampilkan status akun. Lupa password memakai tautan pemulihan email tersendiri dan tidak menjadi syarat konfirmasi pendaftaran. Password tidak disimpan di tabel aplikasi, log, atau audit.
+
+Gunakan migrasi akun hingga `20261117192324_verified_account_lifecycle.sql`, aktifkan Confirm email pada Supabase AEMS, dan sesuaikan Site URL serta allowlist redirect dengan domain deployment.
 
 
 ## Login dan pemulihan password
@@ -141,4 +143,4 @@ Halaman kategori/lokasi terpisah satu sama lain dan kembali ke awal ketika filte
 
 ## Pendaftaran melalui persetujuan Admin
 
-Pendaftaran AEMS tidak memerlukan tautan konfirmasi email. Pada Supabase AEMS, Authentication → Sign In / Providers → Confirm email dinonaktifkan atas pilihan pemilik aplikasi. Secure email change tetap aktif. Pengguna membuat akun dengan password, diarahkan ke Menunggu Persetujuan Admin, dan tidak memperoleh akses data bisnis selama `profiles.role` masih null. Admin memeriksa identitas/alamat email lalu menetapkan bagian, jabatan, atasan dan status aktif. Penetapan role aktif merupakan persetujuan akses. Lupa password dan perubahan email tetap menggunakan verifikasi email; perubahan ini tidak menonaktifkan kedua alur tersebut. Pendaftaran yang tidak menghasilkan sesi tidak boleh dilaporkan sebagai sukses atau menyuruh pengguna menunggu email konfirmasi.
+Pendaftaran wajib dikonfirmasi melalui email terlebih dahulu. Pengguna belum terverifikasi tidak muncul di daftar Admin dan belum mendapat akses data bisnis. Jika tautan kedaluwarsa, pengguna dapat meminta kirim ulang atau mendaftar kembali dengan email yang sama. Setelah terverifikasi, pengguna menunggu penetapan role oleh Administrator. Penetapan role aktif memberikan akses dan memicu email pemberitahuan yang mengarahkan pengguna ke halaman login biasa.

@@ -3690,17 +3690,10 @@ export function manageUserProfile(
         403,
       );
     }
-    if (input.role === "ADMIN" && existing.role !== "ADMIN") {
-      throw new AemsError(
-        "FORBIDDEN",
-        "Pilih jenis akun Accounting atau Equipment untuk pengguna ini.",
-        403,
-      );
-    }
     if (process.env.AEMS_STORAGE_MODE === "supabase" && !existing.email_verified_at) throw new AemsError("VALIDATION", "Email pengguna harus diverifikasi sebelum penetapan akun.");
-    const level = input.account_level ?? existing.account_level ?? "STAFF";
+    const level = input.role === "ADMIN" ? "STAFF" : input.account_level ?? existing.account_level ?? "STAFF";
     const managerId =
-      input.manager_id === undefined
+      input.role === "ADMIN" ? null : input.manager_id === undefined
         ? (existing.manager_id ?? null)
         : input.manager_id;
     if (level === "MANAGER" && managerId)

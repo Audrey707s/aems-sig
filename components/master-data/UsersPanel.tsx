@@ -139,9 +139,10 @@ export default function AdminUsersPage() {
       )}
 
       {draft && <section aria-label="Penetapan akun" className="rounded-xl border border-[#547792] bg-white p-5 space-y-4">
-        <h2 className="font-bold text-[#1A3263]">Tetapkan {draft.level === "MANAGER" ? "Manajer" : "Staff"} {draft.role === "ACCOUNTING" ? "Accounting" : "Maintenance"} — {users.find(u=>u.id===draft.id)?.full_name}</h2>
-        {draft.level === "STAFF" && <label className="block text-sm">Manajer yang menyetujui pengajuan<select aria-label="Manajer untuk penetapan Staff" className="mt-2 block w-full rounded border p-2" value={draft.managerId} onChange={e=>setDraft({...draft,managerId:e.target.value})}><option value="">Pilih Manajer aktif</option>{users.filter(m=>m.id!==draft.id&&m.role===draft.role&&m.account_level==="MANAGER"&&m.is_active).map(m=><option key={m.id} value={m.id}>{m.full_name}</option>)}</select><span className="mt-2 block text-slate-600">Jika belum tersedia, tetapkan Manajer pada bagian ini terlebih dahulu.</span></label>}
-        <div className="flex gap-3"><button disabled={saving!==null || (draft.level==="STAFF"&&!draft.managerId)} onClick={()=>{void handleUpdateUser(draft.id,draft.role,true,draft.level,draft.level==="STAFF"?draft.managerId:null);}} className="rounded bg-[#1A3263] px-4 py-2 text-sm text-white disabled:opacity-50">Simpan dan beri tahu pengguna</button><button disabled={saving!==null} onClick={()=>setDraft(null)} className="rounded border px-4 py-2 text-sm">Batal</button></div>
+        <h2 className="font-bold text-[#1A3263]">Tetapkan {draft.role === "ADMIN" ? "Administrator" : `${draft.level === "MANAGER" ? "Manajer" : "Staff"} ${draft.role === "ACCOUNTING" ? "Accounting" : "Maintenance"}`} — {users.find(u=>u.id===draft.id)?.full_name}</h2>
+        {draft.role === "ADMIN" && <p className="text-sm text-slate-600">Pengguna akan mendapat akses penuh untuk mengelola data, persetujuan, dan pengguna AEMS.</p>}
+        {draft.role !== "ADMIN" && draft.level === "STAFF" && <label className="block text-sm">Manajer yang menyetujui pengajuan<select aria-label="Manajer untuk penetapan Staff" className="mt-2 block w-full rounded border p-2" value={draft.managerId} onChange={e=>setDraft({...draft,managerId:e.target.value})}><option value="">Pilih Manajer aktif</option>{users.filter(m=>m.id!==draft.id&&m.role===draft.role&&m.account_level==="MANAGER"&&m.is_active).map(m=><option key={m.id} value={m.id}>{m.full_name}</option>)}</select><span className="mt-2 block text-slate-600">Jika belum tersedia, tetapkan Manajer pada bagian ini terlebih dahulu.</span></label>}
+        <div className="flex gap-3"><button disabled={saving!==null || (draft.role!=="ADMIN"&&draft.level==="STAFF"&&!draft.managerId)} onClick={()=>{void handleUpdateUser(draft.id,draft.role,true,draft.level,draft.role!=="ADMIN"&&draft.level==="STAFF"?draft.managerId:null);}} className="rounded bg-[#1A3263] px-4 py-2 text-sm text-white disabled:opacity-50">Simpan dan beri tahu pengguna</button><button disabled={saving!==null} onClick={()=>setDraft(null)} className="rounded border px-4 py-2 text-sm">Batal</button></div>
       </section>}
 
       <div className="rounded-xl bg-white border border-[#E8E2DB] overflow-x-auto shadow-sm">
@@ -219,6 +220,7 @@ export default function AdminUsersPage() {
                           <option value="" disabled>
                             Belum ditetapkan
                           </option>
+                          <option value="ADMIN:STAFF">Administrator</option>
                           <option value="ACCOUNTING:MANAGER">
                             Manajer Accounting
                           </option>
