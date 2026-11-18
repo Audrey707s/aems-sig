@@ -433,10 +433,10 @@ export default function Dashboard() {
                       >
                         <span className="font-medium">{l.name}</span>
                         <span className="flex shrink-0 gap-2">
-                          <span className="rounded bg-[#e8eef7] px-2 py-1">
+                          <span className="aems-badge rounded bg-[#e8eef7] px-2 py-1">
                             {l.assets} aset
                           </span>
-                          <span className="rounded bg-slate-100 px-2 py-1">
+                          <span className="aems-badge rounded bg-slate-100 px-2 py-1">
                             {l.equipment} eqp
                           </span>
                         </span>
@@ -456,7 +456,7 @@ export default function Dashboard() {
                   {selected.label}
                   <span
                     aria-live="polite"
-                    className="rounded-full bg-[#e8eef7] px-2.5 py-1 text-xs tabular-nums"
+                    className="aems-badge rounded-full bg-[#e8eef7] px-2.5 py-1 text-xs tabular-nums"
                   >
                     {data.pagination.total}
                   </span>
@@ -546,7 +546,7 @@ export default function Dashboard() {
                             {r.location}
                           </td>
                           <td className="px-5 py-4">
-                            <span className="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs">
+                            <span className="aems-badge whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs">
                               {human(r.status)}
                             </span>
                           </td>

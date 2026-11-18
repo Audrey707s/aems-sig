@@ -95,10 +95,10 @@ export default function AssetDetailPage() {
           </Link>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
+              <span className="aems-badge font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
                 {asset.sap_asset_no} (Sub-aset SAP {asset.sap_sub_no})
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+              <span className="aems-badge text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                 {asset.status}
               </span>
             </div>
