@@ -19,6 +19,11 @@ export function accountNoticeText(notice: Pick<Notice,"full_name"|"role"|"accoun
   const role = notice.role === "ADMIN" ? "Administrator" : `${notice.account_level === "MANAGER" ? "Manajer" : "Staff"} ${notice.role === "ACCOUNTING" ? "Accounting" : "Maintenance"}`;
   return `Halo ${notice.full_name},\n\nSuper Admin telah mengaktifkan akses AEMS Anda sebagai ${role}.${notice.manager_name ? `\nAtasan: ${notice.manager_name}.` : ""}\n\nSilakan masuk menggunakan email dan kata sandi yang Anda daftarkan:\nhttps://aems-sig.vercel.app/login\n\nTidak perlu mendaftar atau memverifikasi email lagi. Jika lupa kata sandi, pilih Lupa kata sandi di halaman masuk.\n\nAEMS-SIG`;
 }
+export function safeMailFailure(error: unknown) {
+  const info = error && typeof error === "object" ? error as {code?:unknown;responseCode?:unknown} : {};
+  const allowed = ["EAUTH","ECONNECTION","ETIMEDOUT","ESOCKET","EDNS","EENVELOPE","EMESSAGE"];
+  return {code: typeof info.code === "string" && allowed.includes(info.code) ? info.code : "MAIL_PROVIDER_ERROR", smtp_status: typeof info.responseCode === "number" && Number.isInteger(info.responseCode) && info.responseCode >= 100 && info.responseCode <= 599 ? info.responseCode : null};
+}
 export async function sendAccountNotice(notice: Notice) {
   const user = process.env.GMAIL_USER?.trim();
   const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
@@ -42,7 +47,7 @@ export async function deliverAccountNotification(profileId: string): Promise<Not
       return current.error ? "UNAVAILABLE" : current.data?.status ?? null;
     }
     let status: NotificationStatus = "SENT";
-    try { await sendAccountNotice(notice); } catch { status = "FAILED"; }
+    try { await sendAccountNotice(notice); } catch (error) { status = "FAILED"; console.error("AEMS_ACCOUNT_EMAIL_FAILED", {notification_id: notice.id, ...safeMailFailure(error)}); }
     const result = await client.from("account_notification_outbox").update({status, sent_at: status === "SENT" ? new Date().toISOString() : null}).eq("id",notice.id).eq("lease_id",notice.lease_id).eq("status","SENDING");
     return result.error ? "UNAVAILABLE" : status;
   } catch { return "UNAVAILABLE"; }

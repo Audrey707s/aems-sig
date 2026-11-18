@@ -2,7 +2,7 @@ import {beforeEach,describe,it,expect,vi} from "vitest";
 const mocks=vi.hoisted(()=>({rpc:vi.fn(),from:vi.fn(),sendMail:vi.fn(),close:vi.fn(),createTransport:vi.fn(),update:vi.fn(),eq:vi.fn()}));
 vi.mock("@supabase/supabase-js",()=>({createClient:()=>({rpc:mocks.rpc,from:mocks.from})}));
 vi.mock("nodemailer",()=>({default:{createTransport:mocks.createTransport}}));
-import {deliverAccountNotification,sendAccountNotice,accountNoticeText} from "@/lib/email/account-notification";
+import {deliverAccountNotification,sendAccountNotice,accountNoticeText,safeMailFailure} from "@/lib/email/account-notification";
 const notice={id:"test-notice",profile_id:"test-user",recipient:"staff@example.test",full_name:"Staff",role:"MAINTENANCE",account_level:"STAFF",manager_name:"Manager",lease_id:"lease"};
 beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("AEMS_STORAGE_MODE","supabase");vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL","https://example.supabase.co");vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY","test-only");vi.stubEnv("GMAIL_USER","sender@example.test");vi.stubEnv("GMAIL_APP_PASSWORD","testonlypassword");mocks.rpc.mockResolvedValue({data:[notice],error:null});mocks.createTransport.mockReturnValue({sendMail:mocks.sendMail,close:mocks.close});mocks.sendMail.mockResolvedValue({accepted:[notice.recipient]});mocks.eq.mockReturnValue({eq:mocks.eq,then:(resolve:(value:unknown)=>void)=>resolve({error:null})});mocks.update.mockReturnValue({eq:mocks.eq});mocks.from.mockReturnValue({update:mocks.update});});
 describe("Assignment notification delivery",()=>{
@@ -12,4 +12,9 @@ describe("Assignment notification delivery",()=>{
  it("does not send when another worker already claimed or sent the event",async()=>{mocks.rpc.mockResolvedValue({data:[],error:null});mocks.from.mockReturnValue({select:()=>({eq:()=>({order:()=>({limit:()=>({maybeSingle:async()=>({data:{status:"SENT"},error:null})})})})})});expect(await deliverAccountNotification(notice.profile_id)).toBe("SENT");expect(mocks.sendMail).not.toHaveBeenCalled();});
  it("rejects an SMTP response that did not accept this recipient",async()=>{mocks.sendMail.mockResolvedValue({accepted:[]});await expect(sendAccountNotice(notice)).rejects.toThrow("Email not accepted");});
  it("uses the actual assigned account and direct login without an expiring token",()=>{const text=accountNoticeText(notice);expect(text).toContain("Staff Maintenance");expect(text).toContain("Atasan: Manager");expect(text).toContain("https://aems-sig.vercel.app/login");expect(text).not.toContain("token_hash");});
+});
+
+describe("Safe provider diagnostics",()=>{
+ it("records only an allowlisted error code and SMTP status",()=>{expect(safeMailFailure({code:"EAUTH",responseCode:535,message:"password and recipient must stay private",response:"SMTP transcript",command:"AUTH private"})).toEqual({code:"EAUTH",smtp_status:535});});
+ it("never logs arbitrary provider codes or error text",()=>{expect(safeMailFailure({code:"private-user-secret",responseCode:"private",message:"private"})).toEqual({code:"MAIL_PROVIDER_ERROR",smtp_status:null});});
 });
