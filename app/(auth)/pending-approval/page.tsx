@@ -1,7 +1,6 @@
 import { PendingAccountActions } from "@/components/ui/PendingAccountActions";
 import { redirect } from "next/navigation";
 import { getSignedInProfile } from "@/lib/auth/personal-account";
-import { PasswordChangeForm } from "@/components/ui/PasswordChangeForm";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +12,8 @@ export default async function PendingApprovalPage() {
     <section className="rounded-xl border border-[#E8E2DB] bg-white p-6 space-y-3">
       <h1 className="text-xl font-bold">{profile.is_active ? "Menunggu Persetujuan Admin" : "Akun Dinonaktifkan"}</h1>
       <p className="font-semibold">{profile.full_name}</p>
-      <p className="text-sm text-[#547792]">{profile.is_active ? "Pendaftaran berhasil. Admin akan memeriksa pengguna dan menetapkan bagian, jabatan, serta atasan. Akses data tersedia setelah akun disetujui." : "Hubungi admin untuk memeriksa status akun Anda."}</p>
+      <p className="text-sm text-[#547792]">{profile.is_active ? "Email berhasil diverifikasi. Akun Anda menunggu penetapan role oleh Admin. Setelah disetujui, masuk menggunakan email dan kata sandi yang sudah didaftarkan." : "Hubungi admin untuk memeriksa status akun Anda."}</p>
       <PendingAccountActions />
     </section>
-    <PasswordChangeForm />
   </div></main>;
 }
