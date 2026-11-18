@@ -178,7 +178,7 @@ export default function AdminUsersPage() {
                     <td className="py-3 px-4 text-[#1A3263]">{u.department}</td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2.5 py-0.5 rounded border font-bold ${getRoleBadgeColor(
+                        className={`aems-badge px-2.5 py-0.5 rounded border font-bold ${getRoleBadgeColor(
                           u.role,
                         )}`}
                       >
@@ -187,7 +187,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded font-bold ${
+                        className={`aems-badge px-2 py-0.5 rounded font-bold ${
                           u.is_active
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-red-100 text-red-800"

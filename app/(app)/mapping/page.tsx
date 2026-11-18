@@ -480,14 +480,14 @@ function MappingContent() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8E2DB] pb-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="font-mono font-bold px-2.5 py-1 rounded bg-[#1A3263] text-[#FAB95B]">
+                      <span className="aems-badge font-mono font-bold px-2.5 py-1 rounded bg-[#1A3263] text-[#FAB95B]">
                         {req.request_code}
                       </span>
-                      <span className="font-bold px-2.5 py-0.5 rounded bg-[#EDF2F6] text-[#1A3263]">
+                      <span className="aems-badge font-bold px-2.5 py-0.5 rounded bg-[#EDF2F6] text-[#1A3263]">
                         {req.request_type}
                       </span>
                       <span
-                        className={`font-bold px-2.5 py-0.5 rounded ${
+                        className={`aems-badge font-bold px-2.5 py-0.5 rounded ${
                           req.status === "SUBMITTED"
                             ? "bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]"
                             : req.status === "APPROVED"
@@ -520,7 +520,7 @@ function MappingContent() {
                             {item.equipment_name}
                           </span>
                           {item.descendant_count > 0 && (
-                            <span className="ml-2 text-[11px] px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-semibold">
+                            <span className="aems-badge ml-2 text-[11px] px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-semibold">
                               +{item.descendant_count} sub-equipment ikut
                               berpindah
                             </span>
@@ -556,7 +556,7 @@ function MappingContent() {
                           />
                           <div className="flex items-center gap-2">
                             {req.requested_by === user?.id && (
-                              <span className="text-[11px] text-[#8A580C] bg-[#FEF6E7] px-2.5 py-1 rounded border border-[#FAB95B] font-semibold">
+                              <span className="aems-badge text-[11px] text-[#8A580C] bg-[#FEF6E7] px-2.5 py-1 rounded border border-[#FAB95B] font-semibold">
                                 Pengajuan sendiri tidak dapat disetujui oleh
                                 akun yang sama
                               </span>
@@ -619,7 +619,7 @@ function MappingContent() {
                     {h.request_code || "-"}
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-bold">
+                    <span className="aems-badge px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-bold">
                       {h.event_type}
                     </span>
                   </td>

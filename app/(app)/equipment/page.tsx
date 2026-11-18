@@ -271,7 +271,7 @@ function EquipmentContent() {
                     <td className="px-4 py-3">{eq.category_name || "Tanpa kategori"}</td>
                     <td className="px-4 py-3 text-[#547792]">{eq.location_name || "Tanpa lokasi"}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
+                      <span className="aems-badge px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
                         {eq.kind === "WHOLE_UNIT"
                           ? "Perangkat Utuh"
                           : eq.kind === "COMPONENT"
@@ -281,7 +281,7 @@ function EquipmentContent() {
                     </td>
                     <td className="py-3 px-4">
                       {eq.is_unmapped ? (
-                        <span className="px-2 py-0.5 rounded bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/60 font-semibold">
+                        <span className="aems-badge px-2 py-0.5 rounded bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/60 font-semibold">
                           Belum Termapping
                         </span>
                       ) : (
@@ -298,7 +298,7 @@ function EquipmentContent() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                        className={`aems-badge px-2 py-0.5 rounded text-[11px] font-bold ${
                           eq.condition === "BAIK"
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]"

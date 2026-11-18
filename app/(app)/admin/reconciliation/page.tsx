@@ -93,7 +93,7 @@ export default function ReconciliationPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2.5 py-0.5 rounded font-bold ${
+                  className={`aems-badge px-2.5 py-0.5 rounded font-bold ${
                     f.severity === "HIGH"
                       ? "bg-red-100 text-red-800"
                       : f.severity === "MEDIUM"
@@ -103,7 +103,7 @@ export default function ReconciliationPage() {
                 >
                   {f.severity}
                 </span>
-                <span className="font-mono font-bold px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263]">
+                <span className="aems-badge font-mono font-bold px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263]">
                   {f.finding_type}
                 </span>
                 <span className="font-bold text-[#1A3263]">
@@ -111,7 +111,7 @@ export default function ReconciliationPage() {
                 </span>
               </div>
               <span
-                className={`px-2.5 py-0.5 rounded font-bold ${
+                className={`aems-badge px-2.5 py-0.5 rounded font-bold ${
                   f.status === "OPEN"
                     ? "bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]"
                     : "bg-emerald-100 text-emerald-800"

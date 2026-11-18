@@ -82,7 +82,7 @@ export default function UnmappedEquipmentPage() {
                   </td>
                   <td className="py-3 px-4 font-bold text-[#1A3263]">{eq.name}</td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
+                    <span className="aems-badge px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-semibold">
                       {eq.kind === "WHOLE_UNIT"
                         ? "Perangkat Utuh"
                         : eq.kind === "COMPONENT"

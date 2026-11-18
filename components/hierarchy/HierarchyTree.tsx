@@ -79,14 +79,14 @@ function TreeNodeItem({
             onClick={() => onSelectNode?.(node)}
             className="min-w-0 cursor-pointer flex items-center gap-2 flex-wrap"
           >
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#E8E2DB]/70 text-[#1A3263]">
+            <span className="aems-badge font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#E8E2DB]/70 text-[#1A3263]">
               {node.code}
             </span>
             <span className="text-sm font-semibold text-[#1A3263] truncate">
               {node.name}
             </span>
             {node.kind && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792]">
+              <span className="aems-badge text-[10px] font-semibold px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792]">
                 {node.kind === "WHOLE_UNIT"
                   ? "Perangkat Utuh"
                   : node.kind === "COMPONENT"
@@ -103,7 +103,7 @@ function TreeNodeItem({
         <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           {node.condition && (
             <span
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+              className={`aems-badge text-[10px] font-semibold px-2 py-0.5 rounded ${
                 node.condition === "BAIK"
                   ? "bg-emerald-100 text-emerald-800"
                   : "bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]"
@@ -139,7 +139,7 @@ function TreeNodeItem({
                   </span>
                   <span className="text-[#547792]">— {sp.spec_value}</span>
                 </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/50 font-semibold">
+                <span className="aems-badge text-[10px] px-1.5 py-0.5 rounded bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/50 font-semibold">
                   Atribut Spesifikasi
                 </span>
               </div>

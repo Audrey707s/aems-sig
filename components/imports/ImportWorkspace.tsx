@@ -358,7 +358,7 @@ export default function ImportWorkspace({ type }: { type: ImportType }) {
                 <h2 className="text-base font-bold text-[#1A3263]">
                   Pratinjau Batch: {activeBatch.file_name}
                 </h2>
-                <span className="px-2.5 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-bold">
+                <span className="aems-badge px-2.5 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263] font-bold">
                   {activeBatch.status}
                 </span>
               </div>
@@ -422,7 +422,7 @@ export default function ImportWorkspace({ type }: { type: ImportType }) {
                     </td>
                     <td className="py-2.5 px-3">
                       <span
-                        className={`px-2 py-0.5 rounded font-bold ${
+                        className={`aems-badge px-2 py-0.5 rounded font-bold ${
                           r.validation_status === "VALID"
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-red-100 text-red-800"
@@ -433,7 +433,7 @@ export default function ImportWorkspace({ type }: { type: ImportType }) {
                     </td>
                     <td className="py-2.5 px-3">
                       <span
-                        className={`px-2 py-0.5 rounded font-bold ${
+                        className={`aems-badge px-2 py-0.5 rounded font-bold ${
                           r.match_status === "NEW"
                             ? "bg-[#E8EEF7] text-[#1A3263]"
                             : r.match_status === "DUPLICATE_DIFF" ||

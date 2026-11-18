@@ -282,19 +282,19 @@ function AssetsContent() {
                     </td>
                     <td className="py-3 px-4">
                       {asset.total_equipment_count > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8EEF7] text-[#1A3263]">
+                        <span className="aems-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8EEF7] text-[#1A3263]">
                           {asset.direct_equipment_count} Langsung /{" "}
                           {asset.total_equipment_count} Total
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/60">
+                        <span className="aems-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF6E7] text-[#8A580C] border border-[#FAB95B]/60">
                           Belum Ada Equipment
                         </span>
                       )}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                        className={`aems-badge px-2 py-0.5 rounded text-[11px] font-bold ${
                           asset.status === "ACTIVE"
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-[#E8E2DB] text-[#1A3263]"

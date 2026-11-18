@@ -139,17 +139,17 @@ export default function EquipmentDetailPage() {
           </Link>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
+              <span className="aems-badge font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
                 {equipment.equipment_no}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-bold">
+              <span className="aems-badge text-xs px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792] font-bold">
                 {equipment.kind === "WHOLE_UNIT"
                   ? "Perangkat Utuh"
                   : equipment.kind === "COMPONENT"
                   ? "Komponen"
                   : "Lainnya"}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+              <span className="aems-badge text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                 {equipment.condition}
               </span>
             </div>
@@ -258,7 +258,7 @@ export default function EquipmentDetailPage() {
                     </span>
                     <span className="font-semibold text-[#1A3263]">{ch.name}</span>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792]">
+                  <span className="aems-badge text-[10px] font-semibold px-2 py-0.5 rounded bg-[#EDF2F6] text-[#547792]">
                     Level {ch.depth}
                   </span>
                 </Link>
@@ -283,7 +283,7 @@ export default function EquipmentDetailPage() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[#1A3263]">{sp.spec_name}</span>
                   {sp.promoted_equipment_id ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                    <span className="aems-badge text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                       Telah Dipromosikan
                     </span>
                   ) : (

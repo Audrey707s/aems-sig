@@ -377,7 +377,7 @@ export function AppShell({
                               </div>
                             </div>
                             {active && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
+                              <span className="aems-badge text-[10px] font-bold px-2 py-0.5 rounded bg-[#1A3263] text-[#FAB95B]">
                                 Aktif
                               </span>
                             )}
@@ -463,7 +463,7 @@ export function AppShell({
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border ${getRoleBadgeColor(
+                    className={`aems-badge inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border ${getRoleBadgeColor(
                       user?.role,
                     )}`}
                   >

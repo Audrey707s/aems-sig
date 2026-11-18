@@ -102,3 +102,12 @@ main tbody tr { transition: background-color 120ms ease; }
 @keyframes aems-table-in { from { opacity: .6; } to { opacity: 1; } }
 @keyframes aems-skeleton { to { opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .aems-route-enter, .dashboard-card, .dashboard-bar, .dashboard-table-enter, .dashboard-skeleton { animation: none !important; transition: none !important; transform: none !important; } }
+
+/* Status labels remain one complete box, even inside narrow table columns. */
+.aems-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  vertical-align: middle;
+}

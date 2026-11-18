@@ -78,7 +78,7 @@ export default function AuditTrailPage() {
                       <div className="text-[11px] text-[#547792]">{log.actor_role}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="font-mono font-bold px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263]">
+                      <span className="aems-badge font-mono font-bold px-2 py-0.5 rounded bg-[#E8EEF7] text-[#1A3263]">
                         {log.entity_type}: {log.entity_code}
                       </span>
                     </td>
