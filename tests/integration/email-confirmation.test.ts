@@ -5,11 +5,13 @@ vi.mock("@/lib/supabase/server",()=>({createSupabaseServerClient:async()=>({auth
 import {GET,POST} from "@/app/auth/confirm/route";
 const token="a".repeat(64);
 function submit(origin="https://aems.test", hash=token){return new NextRequest("https://aems.test/auth/confirm",{method:"POST",headers:{origin},body:new URLSearchParams({token_hash:hash,type:"signup"})});}
-beforeEach(()=>{mocks.verifyOtp.mockReset();mocks.verifyOtp.mockResolvedValue({error:null});});
+beforeEach(()=>{mocks.verifyOtp.mockReset();mocks.verifyOtp.mockResolvedValue({data:{user:{id:"verified-user",email_confirmed_at:"2026-11-18T00:00:00Z"},session:{user:{id:"verified-user"}}},error:null});});
 describe("Confirmation links",()=>{
  it("does not consume a token on a scanner GET",async()=>{const res=await GET(new NextRequest(`https://aems.test/auth/confirm?token_hash=${token}&type=signup`));expect(res.headers.get("location")).toContain("/auth/verify?");expect(mocks.verifyOtp).not.toHaveBeenCalled();});
  it("confirms only on a deliberate same-origin POST",async()=>{const res=await POST(submit());expect(mocks.verifyOtp).toHaveBeenCalledWith({token_hash:token,type:"signup"});expect(res.headers.get("location")).toBe("https://aems.test/pending-approval");});
  it("passes the full PKCE-prefixed token unchanged to Supabase",async()=>{const hash="pkce_"+token;const res=await POST(submit("https://aems.test",hash));expect(mocks.verifyOtp).toHaveBeenCalledWith({token_hash:hash,type:"signup"});expect(res.headers.get("location")).toBe("https://aems.test/pending-approval");});
- it("offers resend for expired links, with no role assignment",async()=>{mocks.verifyOtp.mockResolvedValue({error:{code:"otp_expired"}});const res=await POST(submit());expect(res.headers.get("location")).toBe("https://aems.test/login?confirmation=failed");});
+ it("offers resend for expired links, with no role assignment",async()=>{mocks.verifyOtp.mockResolvedValue({error:{code:"otp_expired"}});const res=await POST(submit());expect(res.headers.get("location")).toBe("https://aems.test/auth/confirmation-error?reason=expired");});
  it("does not verify on a cross-origin POST",async()=>{await POST(submit("https://evil.test"));expect(mocks.verifyOtp).not.toHaveBeenCalled();});
+ it("rejects null origins without authenticating or falling back to another account",async()=>{const res=await POST(submit("null"));expect(res.headers.get("location")).toBe("https://aems.test/auth/confirmation-error?reason=invalid");expect(mocks.verifyOtp).not.toHaveBeenCalled();});
+ it("requires the confirmed identity to match the resulting session",async()=>{mocks.verifyOtp.mockResolvedValue({data:{user:{id:"new-user",email_confirmed_at:"2026-11-18T00:00:00Z"},session:{user:{id:"old-admin"}}},error:null});const res=await POST(submit());expect(res.headers.get("location")).toContain("reason=unavailable");});
 });

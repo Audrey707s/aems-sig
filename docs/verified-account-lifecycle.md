@@ -17,3 +17,11 @@ Tidak ada email massal saat migrasi. Profil/role/histori yang sudah ada dipertah
 ## Kompatibilitas token konfirmasi
 
 TokenHash Supabase pada alur PKCE memiliki awalan `pkce_` diikuti hash heksadesimal. Halaman konfirmasi dan endpoint POST memakai validator bersama yang menerima hash biasa maupun prefiks PKCE dan meneruskannya utuh ke `verifyOtp`. GET tetap tidak mengonsumsi token. Tes mencakup format aktual PKCE sepanjang 61 karakter, rendering tombol konfirmasi, dan POST tanpa menghapus prefiks. Token hilang/rusak tetap ditolak.
+
+## Pengiriman form dan sesi akun lain
+
+Halaman native POST harus memakai `strict-origin`, bukan `no-referrer`: kebijakan no-referrer dapat membuat header Origin pada navigasi POST menjadi `null`, sehingga perlindungan same-origin menolaknya sebelum Supabase dipanggil. `strict-origin` mempertahankan asal situs tanpa mengirim path/query token sebagai Referer. Origin asing maupun null tetap ditolak.
+
+Kegagalan diarahkan ke `/auth/confirmation-error` yang selalu tersedia, dengan pengiriman ulang email. URL lama `/login?confirmation=failed` dan `/dashboard?confirmation=failed` juga dialihkan ke halaman ini sebelum pemeriksaan sesi. Sesi Admin aktif tidak dijadikan bukti bahwa akun pendaftaran sudah terverifikasi. Keberhasilan hanya diterima jika Supabase mengembalikan pengguna terkonfirmasi dan sesi dengan identitas yang sama.
+
+Validasi tambahan: uji middleware dengan sesi Admin aktif maupun logout, penolakan origin null/asing, dan kecocokan identitas sesi hasil konfirmasi. Uji browser wajib mencakup penekanan tombol native form, bukan hanya membuka GET halaman.
